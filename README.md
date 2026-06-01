@@ -3,7 +3,9 @@
 > Aplicação interativa para o ensino de Acústica Musical · Visualização de potência sonora,
 > dinâmica orquestral e percepção isofônica (Fletcher–Munson / ISO 226:2003).
 
-[![GitHub Pages](https://img.shields.io/badge/demo-GitHub_Pages-2b1810?style=flat-square&logo=github)](#deploy)
+### 🎓 [**Acessar a aplicação online**](https://ieysimurra.github.io/Visualizador-Interativo-de-Gama-Din-mica-de-Instrumentos-Musicais/)
+
+[![Demo online](https://img.shields.io/badge/▶_demo_online-GitHub_Pages-2b1810?style=for-the-badge&logo=github)](https://ieysimurra.github.io/Visualizador-Interativo-de-Gama-Din-mica-de-Instrumentos-Musicais/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-a8762d?style=flat-square)](LICENSE)
 [![Single file](https://img.shields.io/badge/HTML-single--file-c69845?style=flat-square)](index.html)
 [![Web Audio API](https://img.shields.io/badge/Web_Audio_API-supported-8a4a1a?style=flat-square)](https://developer.mozilla.org/docs/Web/API/Web_Audio_API)
@@ -12,6 +14,8 @@ Aplicativo didático desenvolvido para a disciplina de **Acústica Musical** min
 **Prof. Ivan Simurra** (NICS/UNICAMP). Permite ao aluno configurar uma orquestra (cordas,
 madeiras, metais) e observar a **soma logarítmica de níveis sonoros**, contrastando o **nível
 físico** (dB SPL) com a **sensação subjetiva de intensidade** (fones).
+
+**URL da demo**: <https://ieysimurra.github.io/Visualizador-Interativo-de-Gama-Din-mica-de-Instrumentos-Musicais/>
 
 ---
 
@@ -125,6 +129,18 @@ dinâmica nos dropdowns e clique em "→". O sample é decodificado e adicionado
 
 ---
 
+## Plano de aula sugerido (3h)
+
+| Tempo | Bloco | Atividade |
+|---|---|---|
+| 0:00–0:30 | **Introdução teórica** | Soma logarítmica, intensidade vs. pressão, escala dB |
+| 0:30–1:30 | **Prática guiada** | Explorar o app: contar 1, 2, 4, 8, 16 violinos a mf → confirmar lei +10·log₁₀(n) |
+| 1:30–1:45 | Intervalo | |
+| 1:45–2:30 | **Prática individual** | Reconstruir presets de Mozart e Mahler; comparar dB e fones |
+| 2:30–3:00 | **Discussão** | Por que metais "dominam" o tutti? Implicações para orquestração |
+
+---
+
 ## Estrutura do repositório
 
 ```
@@ -143,15 +159,20 @@ dinâmica nos dropdowns e clique em "→". O sample é decodificado e adicionado
 
 ## Deploy
 
+### Demo online
+
+Esta aplicação já está publicada no GitHub Pages:
+
+🔗 **<https://ieysimurra.github.io/Visualizador-Interativo-de-Gama-Din-mica-de-Instrumentos-Musicais/>**
+
 ### GitHub Pages (via Actions)
 
-O workflow `.github/workflows/deploy.yml` está pré-configurado. Para publicar:
+O workflow `.github/workflows/deploy.yml` está pré-configurado e roda automaticamente a
+cada push para `main`. Para habilitar:
 
-1. **Push** este repositório para o GitHub
-2. Em **Settings → Pages**, defina:
+1. Em **Settings → Pages**, defina:
    - Source: **GitHub Actions**
-3. O deploy roda automaticamente a cada push para `main`. URL final:
-   `https://<seu-usuario>.github.io/<nome-do-repo>/`
+2. Cada novo push para `main` dispara um novo deploy.
 
 ### Hospedagem alternativa
 
