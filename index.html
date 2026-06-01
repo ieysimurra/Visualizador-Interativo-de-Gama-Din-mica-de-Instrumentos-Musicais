@@ -1,0 +1,3442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gama Dinâmica Orquestral — Acústica Musical · NICS/UNICAMP</title>
+<meta name="description" content="Aplicativo interativo para visualizar a gama dinâmica de intensidades sonoras de uma orquestra e sua relação com as curvas isofônicas de Fletcher-Munson. Disciplina de Acústica Musical, Prof. Ivan Simurra, NICS/UNICAMP.">
+<style>
+/* =========================================================================
+   GAMA DINÂMICA ORQUESTRAL
+   Aplicação didática · Acústica Musical · NICS/UNICAMP
+   Prof. Ivan Simurra · Fevereiro 2026
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* Paleta · papel de programa de concerto + verniz de violino + latão */
+  --paper: #f4ecd8;
+  --paper-light: #faf3e0;
+  --paper-deep: #e8dcc0;
+  --ink: #1a1410;
+  --ink-soft: #3a2f24;
+  --ink-muted: #6b5a48;
+  --varnish: #6b2615;         /* verniz violino · sangria de cortina */
+  --varnish-deep: #4a1808;
+  --brass: #a8762d;            /* latão polido */
+  --brass-light: #c69845;
+  --brass-glow: #e8b85f;
+  --strings: #2c4a6b;          /* azul-cobalto · cordas */
+  --strings-light: #4a6b8a;
+  --woods: #5a6b3a;            /* verde-oliva · madeiras */
+  --woods-light: #7a8b5a;
+  --brass-section: #8a4a1a;    /* cobre · metais */
+  --brass-section-light: #b06a3a;
+  --gold-leaf: #b8924a;
+  --shadow: rgba(26, 20, 16, 0.12);
+  --shadow-deep: rgba(26, 20, 16, 0.28);
+  --paper-rule: rgba(26, 20, 16, 0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: 'EB Garamond', Georgia, serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+
+/* Textura sutil de papel envelhecido */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(168, 118, 45, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(107, 38, 21, 0.03) 0%, transparent 50%);
+  mix-blend-mode: multiply;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='3'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.5'/></svg>");
+  mix-blend-mode: multiply;
+}
+
+/* ============================
+   TIPOGRAFIA
+   ============================ */
+h1, h2, h3, h4 {
+  font-family: 'Cormorant Garamond', 'Didot', Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.display {
+  font-family: 'Cormorant Garamond', 'Didot', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.mono, .num {
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.smallcaps {
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+}
+
+a { color: var(--varnish); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+a:hover { border-color: var(--varnish); }
+
+/* ============================
+   LAYOUT GERAL
+   ============================ */
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ============================
+   CABEÇALHO EDITORIAL
+   ============================ */
+.masthead {
+  padding: 56px 0 32px;
+  border-bottom: 2px solid var(--ink);
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.masthead::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -7px;
+  height: 1px;
+  background: var(--ink);
+}
+
+.masthead-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 32px;
+}
+
+.masthead-left, .masthead-right {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  line-height: 1.8;
+}
+
+.masthead-right { text-align: right; }
+
+.masthead-title {
+  text-align: center;
+}
+
+.masthead-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--varnish);
+  margin-bottom: 16px;
+}
+
+.masthead h1 {
+  font-size: clamp(48px, 7vw, 92px);
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.masthead h1 .ornament {
+  font-style: italic;
+  color: var(--varnish);
+  font-weight: 400;
+}
+
+.masthead-sub {
+  margin-top: 14px;
+  font-style: italic;
+  font-size: 19px;
+  color: var(--ink-soft);
+  font-family: 'Cormorant Garamond', serif;
+}
+
+/* ============================
+   ÍNDICE / SUMÁRIO
+   ============================ */
+.toc {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  padding: 16px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--paper-rule);
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+}
+
+.toc a {
+  color: var(--ink-muted);
+  border-bottom: none;
+  padding-bottom: 2px;
+  border-bottom: 1px dotted transparent;
+}
+
+.toc a:hover { color: var(--varnish); border-bottom-color: var(--varnish); }
+
+/* ============================
+   SECTION HEADERS · estilo editorial
+   ============================ */
+.section {
+  margin-bottom: 64px;
+  scroll-margin-top: 20px;
+}
+
+.section-header {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 24px;
+  align-items: baseline;
+  margin-bottom: 28px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.section-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 42px;
+  color: var(--varnish);
+  line-height: 1;
+}
+
+.section-title h2 {
+  font-size: clamp(28px, 3.5vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.section-title .kicker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 6px;
+}
+
+/* ============================
+   PALCO DA ORQUESTRA
+   ============================ */
+.stage-wrapper {
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 30%, rgba(232, 184, 95, 0.18) 0%, transparent 70%),
+    linear-gradient(180deg, #2a1f15 0%, #3a2a1a 50%, #1f1610 100%);
+  border-radius: 8px;
+  padding: 36px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 2px 4px var(--shadow),
+    inset 0 1px 0 rgba(255, 220, 150, 0.08),
+    inset 0 -40px 60px rgba(0, 0, 0, 0.4);
+}
+
+.stage-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 80%; height: 8px;
+  background: radial-gradient(ellipse at center top, rgba(232, 184, 95, 0.6), transparent 70%);
+  filter: blur(3px);
+}
+
+.stage-svg {
+  width: 100%;
+  height: auto;
+  max-height: 540px;
+  display: block;
+}
+
+.stage-legend {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 24px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--paper);
+  opacity: 0.85;
+}
+
+.stage-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ============================
+   PAINEL PRINCIPAL · GRID
+   ============================ */
+.console-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 32px;
+  margin-top: 24px;
+}
+
+@media (max-width: 980px) {
+  .console-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================
+   PAINEL DE NAIPES
+   ============================ */
+.section-panel {
+  background: var(--paper-light);
+  border: 1px solid var(--paper-rule);
+  border-radius: 4px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 2px var(--shadow);
+  position: relative;
+}
+
+.section-panel::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--accent, var(--ink));
+  border-radius: 4px 0 0 4px;
+}
+
+.section-panel[data-family="strings"] { --accent: var(--strings); }
+.section-panel[data-family="woods"] { --accent: var(--woods); }
+.section-panel[data-family="brass"] { --accent: var(--brass-section); }
+
+.section-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--paper-rule);
+}
+
+.section-panel-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--accent, var(--ink));
+}
+
+.section-panel-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-muted);
+  letter-spacing: 0.05em;
+}
+
+.section-panel-meta strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Linha de instrumento */
+.instrument-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dotted var(--paper-rule);
+}
+
+.instrument-row:last-child { border-bottom: none; }
+
+.instrument-icon {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.75;
+}
+
+.instrument-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.instrument-name {
+  font-family: 'EB Garamond', serif;
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
+.instrument-name .latin {
+  font-style: italic;
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-left: 6px;
+}
+
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--paper);
+  border: 1px solid var(--paper-rule);
+  border-radius: 3px;
+  padding: 2px;
+}
+
+.counter-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+
+.counter-btn:hover {
+  background: var(--accent, var(--ink));
+  color: var(--paper);
+}
+
+.counter-btn:active { transform: scale(0.92); }
+.counter-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.counter-btn:disabled:hover { background: transparent; color: var(--ink-soft); }
+
+.counter-value {
+  min-width: 28px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* Seletor de dinâmica */
+.dynamic-select {
+  display: flex;
+  gap: 2px;
+  background: var(--paper);
+  border: 1px solid var(--paper-rule);
+  border-radius: 3px;
+  padding: 2px;
+}
+
+.dynamic-btn {
+  min-width: 26px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink-muted);
+  padding: 0 4px;
+  border-radius: 2px;
+  transition: all 0.15s;
+  letter-spacing: -0.04em;
+}
+
+.dynamic-btn:hover { color: var(--ink); }
+
+.dynamic-btn.active {
+  background: var(--accent, var(--ink));
+  color: var(--paper);
+}
+
+.spl-readout {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-muted);
+  min-width: 56px;
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+
+.spl-readout .val { color: var(--ink); font-weight: 500; }
+
+/* ============================
+   MEDIDORES PRINCIPAIS
+   ============================ */
+.meters-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* VU METER */
+.vu-card {
+  background: linear-gradient(180deg, #1a1410 0%, #2a1f15 100%);
+  border-radius: 6px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0 rgba(232, 184, 95, 0.15),
+    0 2px 4px var(--shadow);
+}
+
+.vu-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(232, 184, 95, 0.08), transparent 60%);
+  pointer-events: none;
+}
+
+.vu-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--brass-glow);
+  text-align: center;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.vu-sublabel {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--paper);
+  opacity: 0.65;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.vu-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.vu-readouts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(232, 184, 95, 0.2);
+}
+
+.vu-readout {
+  text-align: center;
+}
+
+.vu-readout-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brass-glow);
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.vu-readout-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--paper);
+  line-height: 1;
+}
+
+.vu-readout-unit {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--brass-glow);
+  opacity: 0.8;
+  margin-left: 2px;
+}
+
+/* CONTRIBUIÇÃO POR NAIPE */
+.contrib-card {
+  background: var(--paper-light);
+  border: 1px solid var(--paper-rule);
+  border-radius: 6px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.contrib-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 20px;
+  margin-bottom: 14px;
+  color: var(--ink);
+}
+
+.contrib-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 70px;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.contrib-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+
+.contrib-bar-wrap {
+  height: 18px;
+  background: var(--paper-deep);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.contrib-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--bar-color, var(--ink)), var(--bar-color-light, var(--ink-soft)));
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 2px;
+}
+
+.contrib-row[data-family="strings"] {
+  --bar-color: var(--strings);
+  --bar-color-light: var(--strings-light);
+}
+
+.contrib-row[data-family="woods"] {
+  --bar-color: var(--woods);
+  --bar-color-light: var(--woods-light);
+}
+
+.contrib-row[data-family="brass"] {
+  --bar-color: var(--brass-section);
+  --bar-color-light: var(--brass-section-light);
+}
+
+.contrib-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--ink);
+  text-align: right;
+  letter-spacing: 0.02em;
+}
+
+.contrib-val .unit {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 10px;
+  color: var(--ink-muted);
+  margin-left: 1px;
+}
+
+/* ============================
+   CURVAS FLETCHER-MUNSON
+   ============================ */
+.fm-card {
+  background: var(--paper-light);
+  border: 1px solid var(--paper-rule);
+  border-radius: 6px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.fm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.fm-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 20px;
+}
+
+.fm-note {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.fm-canvas-wrap {
+  position: relative;
+  margin-top: 14px;
+  background: var(--paper);
+  border: 1px solid var(--paper-rule);
+  border-radius: 3px;
+  padding: 8px;
+}
+
+.fm-canvas {
+  width: 100%;
+  height: 300px;
+  display: block;
+}
+
+.fm-explainer {
+  margin-top: 12px;
+  font-size: 14px;
+  font-family: 'EB Garamond', serif;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.fm-explainer strong {
+  font-style: normal;
+  color: var(--varnish);
+  font-weight: 600;
+}
+
+/* ============================
+   PRESETS · CONFIGURAÇÕES DE ORQUESTRA
+   ============================ */
+.presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.preset-btn {
+  background: var(--paper-light);
+  border: 1px solid var(--paper-rule);
+  border-left: 3px solid var(--varnish);
+  padding: 14px 16px;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 3px;
+  transition: all 0.2s;
+  font-family: 'EB Garamond', serif;
+}
+
+.preset-btn:hover {
+  background: var(--paper-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px var(--shadow);
+}
+
+.preset-btn-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+.preset-btn-title .it {
+  font-style: italic;
+  color: var(--varnish);
+}
+
+.preset-btn-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+}
+
+/* ============================
+   PLAYER · ÁUDIO DE REFERÊNCIA
+   ============================ */
+.player-card {
+  background: linear-gradient(135deg, #2a1f15 0%, #3a2a1a 50%, #1a1410 100%);
+  border-radius: 6px;
+  padding: 22px 26px;
+  color: var(--paper);
+  margin-top: 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.player-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top right, rgba(232, 184, 95, 0.1), transparent 60%);
+  pointer-events: none;
+}
+
+.player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+
+.player-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--brass-glow);
+}
+
+.player-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--paper);
+  opacity: 0.6;
+}
+
+.player-controls {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px;
+  align-items: center;
+}
+
+.play-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--brass-glow);
+  background: radial-gradient(circle at 30% 30%, var(--brass-light), var(--brass));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 0 12px rgba(232, 184, 95, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.play-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(232, 184, 95, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.play-btn:active { transform: scale(0.98); }
+
+.play-btn svg { width: 22px; height: 22px; fill: var(--ink); }
+
+.player-info {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--paper);
+  opacity: 0.85;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.player-info .highlight {
+  font-style: normal;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--brass-glow);
+  font-weight: 500;
+}
+
+.player-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.player-mode-btn {
+  background: transparent;
+  border: 1px solid rgba(232, 184, 95, 0.4);
+  color: var(--paper);
+  padding: 6px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+  opacity: 0.7;
+}
+
+.player-mode-btn:hover { opacity: 1; border-color: var(--brass-glow); }
+.player-mode-btn.active {
+  background: var(--brass);
+  color: var(--ink);
+  opacity: 1;
+  border-color: var(--brass-glow);
+}
+
+.calibration-warning {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(232, 184, 95, 0.2);
+  font-family: 'EB Garamond', serif;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--paper);
+  opacity: 0.6;
+  line-height: 1.4;
+}
+
+.player-mode-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+.player-mode-btn:disabled:hover { border-color: rgba(232, 184, 95, 0.25); }
+
+/* ============================
+   BIBLIOTECA DE SAMPLES
+   ============================ */
+.sample-library {
+  margin-top: 18px;
+  padding: 16px;
+  background: rgba(20, 14, 8, 0.55);
+  border: 1px solid rgba(232, 184, 95, 0.18);
+  border-radius: 8px;
+  font-family: 'EB Garamond', serif;
+}
+.sample-library-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.sample-library-title strong {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  letter-spacing: 0.5px;
+  color: var(--brass-glow);
+  margin-bottom: 2px;
+}
+.sample-library-meta {
+  font-size: 12.5px;
+  font-style: italic;
+  opacity: 0.7;
+}
+.sample-library-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.sample-load-btn {
+  cursor: pointer;
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--brass-glow);
+  border: 1px solid rgba(232, 184, 95, 0.35);
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.15s;
+  user-select: none;
+}
+.sample-load-btn:hover { border-color: var(--brass-glow); background: rgba(232, 184, 95, 0.08); }
+.sample-clear-btn { color: rgba(220, 100, 90, 0.85); border-color: rgba(220, 100, 90, 0.35); }
+.sample-clear-btn:hover { border-color: rgba(220, 100, 90, 0.8); background: rgba(220, 100, 90, 0.08); }
+
+.sample-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px;
+  border: 2px dashed rgba(232, 184, 95, 0.25);
+  border-radius: 6px;
+  background: rgba(10, 6, 3, 0.4);
+  color: var(--paper);
+  opacity: 0.65;
+  font-size: 13.5px;
+  font-style: italic;
+  transition: all 0.18s;
+  margin-bottom: 12px;
+}
+.sample-dropzone-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  opacity: 0.55;
+  font-style: normal;
+  letter-spacing: 0.3px;
+}
+.sample-dropzone.drag-over {
+  opacity: 1;
+  border-color: var(--brass-glow);
+  background: rgba(232, 184, 95, 0.06);
+  color: var(--brass-glow);
+}
+
+.sample-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  min-height: 16px;
+  margin-bottom: 8px;
+  color: var(--brass-glow);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.sample-status.visible { opacity: 0.85; }
+.sample-status.error { color: rgba(220, 100, 90, 0.9); }
+
+.sample-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 6px;
+}
+.sample-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  background: rgba(40, 28, 16, 0.5);
+  border: 1px solid rgba(232, 184, 95, 0.08);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.sample-row.has-samples { border-color: rgba(232, 184, 95, 0.3); }
+.sample-row-name {
+  flex: 1;
+  color: var(--paper);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13.5px;
+  letter-spacing: 0.2px;
+}
+.sample-row-dots {
+  display: flex;
+  gap: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+}
+.sample-dot {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(20, 14, 8, 0.6);
+  color: rgba(232, 184, 95, 0.25);
+  border: 1px solid rgba(232, 184, 95, 0.15);
+  position: relative;
+  cursor: default;
+}
+.sample-dot.filled {
+  background: var(--brass);
+  color: var(--ink);
+  border-color: var(--brass-glow);
+  font-weight: 600;
+}
+.sample-row-total {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--brass-glow);
+  opacity: 0.8;
+  min-width: 26px;
+  text-align: right;
+}
+
+.sample-unrecognized {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: rgba(40, 28, 16, 0.6);
+  border: 1px solid rgba(220, 160, 90, 0.25);
+  border-radius: 5px;
+}
+.sample-unrecog-header {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 13.5px;
+  color: rgba(232, 184, 95, 0.85);
+  margin-bottom: 6px;
+}
+.sample-unrecog-list {
+  display: grid;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.sample-unrecog-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.sample-unrecog-item .filename {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--paper);
+  opacity: 0.7;
+}
+.sample-unrecog-item select {
+  padding: 3px 5px;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid rgba(232, 184, 95, 0.3);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 10.5px;
+}
+.sample-unrecog-item button {
+  padding: 3px 8px;
+  background: var(--brass);
+  color: var(--ink);
+  border: none;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+/* ============================
+   SECTION TUTTI · ANÁLISE GLOBAL
+   ============================ */
+.tutti-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 800px) {
+  .tutti-grid { grid-template-columns: 1fr; }
+}
+
+.tutti-card {
+  background: var(--paper-light);
+  border: 1px solid var(--paper-rule);
+  border-radius: 6px;
+  padding: 22px 26px;
+}
+
+.tutti-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 72px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--varnish);
+  letter-spacing: -0.03em;
+}
+
+.tutti-num .unit {
+  font-size: 22px;
+  font-style: italic;
+  color: var(--ink-muted);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.tutti-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 8px;
+}
+
+.tutti-comparison {
+  margin-top: 14px;
+  font-family: 'EB Garamond', serif;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+/* ============================
+   DOCUMENTAÇÃO PEDAGÓGICA
+   ============================ */
+.doc-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+@media (max-width: 800px) {
+  .doc-content { grid-template-columns: 1fr; gap: 24px; }
+}
+
+.doc-content h3 {
+  font-size: 24px;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--varnish);
+  margin: 28px 0 12px;
+  letter-spacing: -0.01em;
+}
+
+.doc-content h3:first-child { margin-top: 0; }
+
+.doc-content h4 {
+  font-size: 17px;
+  font-weight: 600;
+  font-family: 'EB Garamond', serif;
+  font-style: normal;
+  color: var(--ink);
+  margin: 18px 0 6px;
+  font-variant: small-caps;
+  letter-spacing: 0.05em;
+}
+
+.doc-content p { margin-bottom: 14px; color: var(--ink-soft); }
+.doc-content p:first-letter { font-weight: 500; }
+
+.doc-content ul, .doc-content ol {
+  padding-left: 22px;
+  margin-bottom: 14px;
+  color: var(--ink-soft);
+}
+
+.doc-content li { margin-bottom: 6px; }
+
+.doc-content code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  background: var(--paper-deep);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--varnish);
+}
+
+.doc-content blockquote {
+  margin: 18px 0;
+  padding: 14px 20px;
+  border-left: 3px solid var(--brass);
+  background: var(--paper-light);
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink-soft);
+  border-radius: 0 4px 4px 0;
+}
+
+.formula {
+  display: block;
+  margin: 14px auto;
+  padding: 14px 20px;
+  background: var(--paper-deep);
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  text-align: center;
+  font-size: 15px;
+  color: var(--ink);
+  border-left: 3px solid var(--brass);
+}
+
+.references {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--paper-rule);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.references h3 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.references ol {
+  list-style: none;
+  padding-left: 0;
+  counter-reset: ref;
+}
+
+.references li {
+  position: relative;
+  padding-left: 32px;
+  margin-bottom: 10px;
+  counter-increment: ref;
+}
+
+.references li::before {
+  content: '[' counter(ref) ']';
+  position: absolute;
+  left: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--varnish);
+  font-weight: 500;
+}
+
+/* ============================
+   RODAPÉ
+   ============================ */
+.colophon {
+  margin-top: 80px;
+  padding: 32px 0 48px;
+  border-top: 3px double var(--ink);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+}
+
+.colophon .display {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 18px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--varnish);
+}
+
+@media (max-width: 600px) {
+  .colophon { flex-direction: column; gap: 12px; align-items: flex-start; }
+}
+
+/* ============================
+   ANIMAÇÕES
+   ============================ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section { animation: fadeIn 0.5s ease-out backwards; }
+.section:nth-child(1) { animation-delay: 0.05s; }
+.section:nth-child(2) { animation-delay: 0.1s; }
+.section:nth-child(3) { animation-delay: 0.15s; }
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(232, 184, 95, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  50% { box-shadow: 0 0 22px rgba(232, 184, 95, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+}
+
+.play-btn.playing { animation: pulse-glow 1.5s ease-in-out infinite; }
+
+/* Pequenas pontuações tipográficas */
+.rule-decorative {
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px;
+  color: var(--brass);
+  margin: 8px 0;
+  opacity: 0.7;
+  letter-spacing: 16px;
+  padding-left: 16px;
+}
+
+/* Scrollbar customizada */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--paper-deep); }
+::-webkit-scrollbar-thumb { background: var(--brass); border-radius: 5px; border: 2px solid var(--paper-deep); }
+::-webkit-scrollbar-thumb:hover { background: var(--varnish); }
+
+/* Estado disabled */
+.row-zero .instrument-name,
+.row-zero .spl-readout,
+.row-zero .dynamic-select { opacity: 0.4; }
+
+/* Tooltip simples */
+[data-tip] { position: relative; cursor: help; }
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 6px 10px;
+  border-radius: 3px;
+  font-family: 'EB Garamond', serif;
+  font-size: 12px;
+  font-style: italic;
+  white-space: nowrap;
+  z-index: 50;
+  box-shadow: 0 4px 8px var(--shadow-deep);
+}
+
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ============================================
+     CABEÇALHO EDITORIAL
+     ============================================ -->
+<header class="masthead">
+  <div class="masthead-grid">
+    <div class="masthead-left">
+      Acústica Musical<br>
+      NICS · UNICAMP<br>
+      Fev 2026
+    </div>
+    <div class="masthead-title">
+      <div class="masthead-eyebrow">— Aplicativo Didático Interativo —</div>
+      <h1>Gama <span class="ornament">dinâmica</span><br>orquestral</h1>
+      <p class="masthead-sub">Intensidade sonora, instrumentação e percepção auditiva</p>
+    </div>
+    <div class="masthead-right">
+      Ref. Meyer 1995<br>
+      Fletcher–Munson 1933<br>
+      ISO 226:2003
+    </div>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#palco">I · Palco</a>
+  <a href="#console">II · Console</a>
+  <a href="#medidores">III · Medidores</a>
+  <a href="#fletcher">IV · Fletcher-Munson</a>
+  <a href="#presets">V · Repertório</a>
+  <a href="#docs">VI · Documentação</a>
+</nav>
+
+<!-- ============================================
+     I · PALCO DA ORQUESTRA
+     ============================================ -->
+<section class="section" id="palco">
+  <div class="section-header">
+    <div class="section-num">I</div>
+    <div class="section-title">
+      <div class="kicker">Disposição · Visualização</div>
+      <h2>O <em>palco</em> da orquestra</h2>
+    </div>
+  </div>
+
+  <div class="stage-wrapper">
+    <svg class="stage-svg" id="stage-svg" viewBox="0 0 900 480" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="stage-legend">
+      <div class="stage-legend-item"><span class="stage-legend-dot" style="background: #4a6b8a;"></span>Cordas</div>
+      <div class="stage-legend-item"><span class="stage-legend-dot" style="background: #7a8b5a;"></span>Madeiras</div>
+      <div class="stage-legend-item"><span class="stage-legend-dot" style="background: #b06a3a;"></span>Metais</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     II · CONSOLE DE CONTROLE
+     ============================================ -->
+<section class="section" id="console">
+  <div class="section-header">
+    <div class="section-num">II</div>
+    <div class="section-title">
+      <div class="kicker">Console · Instrumentação e Dinâmica</div>
+      <h2>Adicionar <em>instrumentistas</em> e definir intensidades</h2>
+    </div>
+  </div>
+
+  <div class="rule-decorative">· · ·</div>
+
+  <div class="console-grid">
+    <!-- COLUNA 1: NAIPES -->
+    <div class="families-col" id="families-col">
+      <!-- Populado por JavaScript -->
+    </div>
+
+    <!-- COLUNA 2: MEDIDORES -->
+    <div class="meters-stack" id="medidores">
+
+      <!-- VU METER -->
+      <div class="vu-card">
+        <div class="vu-label">VU · Medidor de Intensidade</div>
+        <div class="vu-sublabel">Tutti orchestrale · Nível de potência sonora resultante</div>
+        <svg class="vu-svg" id="vu-svg" viewBox="0 0 360 200"></svg>
+        <div class="vu-readouts">
+          <div class="vu-readout">
+            <div class="vu-readout-label">SPL</div>
+            <div class="vu-readout-val"><span id="readout-spl">—</span><span class="vu-readout-unit"> dB</span></div>
+          </div>
+          <div class="vu-readout">
+            <div class="vu-readout-label">Loudness</div>
+            <div class="vu-readout-val"><span id="readout-phon">—</span><span class="vu-readout-unit"> fones</span></div>
+          </div>
+          <div class="vu-readout">
+            <div class="vu-readout-label">Músicos</div>
+            <div class="vu-readout-val"><span id="readout-count">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTRIBUIÇÃO POR NAIPE -->
+      <div class="contrib-card">
+        <div class="contrib-title">Contribuição por naipe</div>
+        <div class="contrib-row" data-family="strings">
+          <div class="contrib-label">Cordas</div>
+          <div class="contrib-bar-wrap"><div class="contrib-bar" id="bar-strings" style="width: 0%"></div></div>
+          <div class="contrib-val"><span id="val-strings">—</span><span class="unit"> dB</span></div>
+        </div>
+        <div class="contrib-row" data-family="woods">
+          <div class="contrib-label">Madeiras</div>
+          <div class="contrib-bar-wrap"><div class="contrib-bar" id="bar-woods" style="width: 0%"></div></div>
+          <div class="contrib-val"><span id="val-woods">—</span><span class="unit"> dB</span></div>
+        </div>
+        <div class="contrib-row" data-family="brass">
+          <div class="contrib-label">Metais</div>
+          <div class="contrib-bar-wrap"><div class="contrib-bar" id="bar-brass" style="width: 0%"></div></div>
+          <div class="contrib-val"><span id="val-brass">—</span><span class="unit"> dB</span></div>
+        </div>
+      </div>
+
+      <!-- PLAYER -->
+      <div class="player-card">
+        <div class="player-header">
+          <div class="player-title">Audição calibrada</div>
+          <div class="player-meta">Áudio sintético · Referência relativa</div>
+        </div>
+        <div class="player-controls">
+          <button class="play-btn" id="play-btn" aria-label="Tocar áudio de referência">
+            <svg viewBox="0 0 24 24" id="play-icon"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <div class="player-info">
+            Compare configurações: cada mudança ajusta o ganho proporcional à diferença em <span class="highlight" id="play-info-db">— dB</span>.<br>
+            <span style="opacity: 0.7;">Referência: 0 dBFS ≡ 100 dB SPL aprox.</span>
+          </div>
+          <div class="player-mode">
+            <button class="player-mode-btn active" data-mode="tone">Tom 1 kHz</button>
+            <button class="player-mode-btn" data-mode="orch">Timbre</button>
+            <button class="player-mode-btn" data-mode="samples" id="mode-samples-btn" disabled>Samples</button>
+          </div>
+        </div>
+        <div class="calibration-warning">
+          O nível absoluto depende da calibração do seu sistema — ajuste o volume confortavelmente com a configuração de menor intensidade antes de comparar.
+        </div>
+
+        <!-- Biblioteca de samples -->
+        <div class="sample-library" id="sample-library">
+          <div class="sample-library-header">
+            <div class="sample-library-title">
+              <strong>Biblioteca de samples</strong>
+              <span class="sample-library-meta" id="sample-library-meta">Nenhum sample carregado · use Tom 1 kHz ou Timbre sintético</span>
+            </div>
+            <div class="sample-library-actions">
+              <label class="sample-load-btn" for="sample-files-input" title="Selecione arquivos individuais">
+                Arquivos
+                <input type="file" id="sample-files-input" multiple accept="audio/*,.wav,.aif,.aiff,.mp3,.ogg,.flac" hidden>
+              </label>
+              <label class="sample-load-btn" for="sample-folder-input" title="Selecione uma pasta inteira (Chrome/Edge)">
+                Pasta
+                <input type="file" id="sample-folder-input" webkitdirectory directory multiple hidden>
+              </label>
+              <button class="sample-load-btn sample-clear-btn" id="sample-clear-btn" title="Limpar biblioteca">Limpar</button>
+            </div>
+          </div>
+          <div class="sample-dropzone" id="sample-dropzone">
+            <span>Arraste arquivos ou pastas aqui</span>
+            <span class="sample-dropzone-sub">FULLSOL · Philharmonia · Iowa MIS · VSL · genérico</span>
+          </div>
+          <div class="sample-status" id="sample-status"></div>
+          <div class="sample-grid" id="sample-grid"></div>
+          <div class="sample-unrecognized" id="sample-unrecognized" hidden>
+            <div class="sample-unrecog-header">Arquivos não reconhecidos · mapeie manualmente</div>
+            <div class="sample-unrecog-list" id="sample-unrecog-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     III · FLETCHER-MUNSON
+     ============================================ -->
+<section class="section" id="fletcher">
+  <div class="section-header">
+    <div class="section-num">III</div>
+    <div class="section-title">
+      <div class="kicker">Percepção · Curvas Isofônicas</div>
+      <h2>Como o ouvido <em>percebe</em> a intensidade total</h2>
+    </div>
+  </div>
+
+  <div class="fm-card">
+    <div class="fm-header">
+      <div class="fm-title">Curvas de igual loudness (Fletcher-Munson, 1933 · ISO 226:2003)</div>
+      <div class="fm-note">Eixo Y · dB SPL · Eixo X · Hz (log)</div>
+    </div>
+    <div class="fm-canvas-wrap">
+      <canvas class="fm-canvas" id="fm-canvas"></canvas>
+    </div>
+    <div class="fm-explainer" id="fm-explainer">
+      A intensidade física total da orquestra é <strong>—</strong>. No entanto, dependendo da frequência predominante do conteúdo musical, o ouvido percebe esse mesmo nível físico como <strong>—</strong>. As bandas centrais (2–5 kHz, sensibilidade máxima da audição) parecerão sempre <em>mais altas</em> do que sugere o dB SPL.
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     IV · ANÁLISE TUTTI
+     ============================================ -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-num">IV</div>
+    <div class="section-title">
+      <div class="kicker">Síntese · Resultado Global</div>
+      <h2>O <em>tutti</em> e suas grandezas</h2>
+    </div>
+  </div>
+
+  <div class="tutti-grid">
+    <div class="tutti-card">
+      <div class="tutti-label">Nível de potência sonora · Total</div>
+      <div class="tutti-num"><span id="tutti-spl">—</span><span class="unit">dB SPL</span></div>
+      <div class="tutti-comparison" id="tutti-spl-compare">
+        Configure os naipes para visualizar a comparação.
+      </div>
+    </div>
+    <div class="tutti-card">
+      <div class="tutti-label">Loudness percebida (≈1 kHz)</div>
+      <div class="tutti-num"><span id="tutti-phon">—</span><span class="unit">fones</span></div>
+      <div class="tutti-comparison" id="tutti-phon-compare">
+        A loudness em fones corresponde à intensidade subjetiva igualada a um tom de 1 kHz.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================
+     V · PRESETS DE REPERTÓRIO
+     ============================================ -->
+<section class="section" id="presets">
+  <div class="section-header">
+    <div class="section-num">V</div>
+    <div class="section-title">
+      <div class="kicker">Repertório · Configurações Históricas</div>
+      <h2><em>Presets</em> de orquestração</h2>
+    </div>
+  </div>
+
+  <div class="presets" id="presets-grid">
+    <!-- Populado por JavaScript -->
+  </div>
+</section>
+
+<!-- ============================================
+     VI · DOCUMENTAÇÃO PEDAGÓGICA
+     ============================================ -->
+<section class="section" id="docs">
+  <div class="section-header">
+    <div class="section-num">VI</div>
+    <div class="section-title">
+      <div class="kicker">Material Didático · Acústica Musical</div>
+      <h2>Documentação <em>pedagógica</em></h2>
+    </div>
+  </div>
+
+  <div class="doc-content">
+    <div>
+      <h3>Objetivos de aprendizagem</h3>
+      <p>Ao final desta atividade prática, o estudante deverá ser capaz de:</p>
+      <ol>
+        <li>Identificar a gama dinâmica característica (entre <em>pianissimo</em> e <em>fortissimo</em>) de cada instrumento da orquestra, com base nos dados experimentais de Meyer (1995) e Patterson (1974);</li>
+        <li>Calcular o nível de potência sonora resultante da combinação de múltiplas fontes incoerentes — base matemática da formação orquestral;</li>
+        <li>Compreender por que dobrar o número de instrumentos não dobra a sensação de loudness, e por que essa progressão é logarítmica;</li>
+        <li>Relacionar o nível físico em dB SPL à loudness percebida em fones, mediada pelas curvas isofônicas de Fletcher-Munson (1933) e da ISO 226:2003;</li>
+        <li>Justificar a prática orquestrante histórica de balanceamento — por que os metais não tocam constantemente em <em>fortissimo</em>, por exemplo.</li>
+      </ol>
+
+      <h3>Conceitos teóricos</h3>
+
+      <h4>Nível de potência sonora</h4>
+      <p>O nível de potência sonora (Sound Power Level, SWL ou L<sub>W</sub>) de uma fonte sonora é medido em decibéis com referência a 10⁻¹² W. Para a percepção do ouvinte, no entanto, o que importa é a <em>intensidade acústica</em> (Sound Intensity Level, SIL) ou a <em>pressão sonora</em> (Sound Pressure Level, SPL) que chega ao tímpano. A 1 m de distância em campo aberto, esses valores são numericamente próximos. Adotaremos o termo "nível" em dB SPL como referência didática.</p>
+
+      <h4>Combinação de fontes incoerentes</h4>
+      <p>Quando múltiplos instrumentos tocam simultaneamente — mas sem correlação de fase, como ocorre em uma orquestra real — suas intensidades se somam aritmeticamente (não os níveis em decibéis!):</p>
+      <code class="formula">L<sub>total</sub> = 10 · log₁₀ ( Σᵢ 10^(Lᵢ / 10) )</code>
+      <p>Para <em>n</em> instrumentos idênticos ao mesmo nível L₁:</p>
+      <code class="formula">L<sub>total</sub> = L₁ + 10 · log₁₀ (n)</code>
+      <p>Disso decorrem três corolários didáticos importantes:</p>
+      <ul>
+        <li>Dobrar o número de instrumentos idênticos acrescenta <strong>+3 dB</strong> ao nível total;</li>
+        <li>Decuplicar acrescenta <strong>+10 dB</strong>;</li>
+        <li>Uma fonte 10 dB mais alta que outra "abafa" a mais fraca: a contribuição da fraca para o total é desprezível (menos de 0,5 dB).</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3>Gama dinâmica por naipe</h3>
+      <p>Segundo Meyer (1995) e Henrique (cap. 6), há uma hierarquia clara de potências sonoras entre os naipes orquestrais:</p>
+      <blockquote>
+        O nível de potência sonora das cordas é em geral cerca de 10 dB mais baixo do que o das madeiras, e o destas, por sua vez, cerca de 10 dB mais baixo do que o dos metais.
+      </blockquote>
+      <p>Essa diferença sistemática explica por que a orquestração tradicional reserva os metais para momentos específicos de clímax, e justifica o desequilíbrio numérico: dezenas de cordas, alguns metais.</p>
+
+      <h4>Não-linearidade dinâmica</h4>
+      <p>Um detalhe importante observado por Strong & Plitnik (1992): quando um instrumento é excitado com mais energia, os modos de alta frequência ganham proporcionalmente mais energia que os de baixa. <em>Forte</em> não é apenas "mais alto" — é também <em>mais brilhante</em>, com espectro mais rico. Este aplicativo aproxima essa relação ajustando ligeiramente o brilho timbral na síntese.</p>
+
+      <h3>As curvas de Fletcher-Munson</h3>
+      <p>Em 1933, Fletcher e Munson publicaram um estudo seminal sobre a sensibilidade auditiva do ouvido humano em função da frequência. As <em>curvas de igual loudness</em> mostram quais combinações de frequência e SPL são percebidas com a mesma intensidade subjetiva.</p>
+      <p>Características essenciais:</p>
+      <ul>
+        <li>O ouvido é mais sensível na região de <strong>2 a 5 kHz</strong> (ressonância do canal auditivo);</li>
+        <li>A sensibilidade cai drasticamente abaixo de 200 Hz e acima de 8 kHz;</li>
+        <li>Em níveis altos, as curvas se "achatam" — daí a sensação de que "tudo soa cheio" no <em>fortissimo</em>;</li>
+        <li>A unidade <em>fone</em> é definida tal que <em>L</em> fones = SPL de um tom de 1 kHz que soa igualmente alto.</li>
+      </ul>
+
+      <h4>Aplicação à orquestração</h4>
+      <p>A presença dominante dos metais — especialmente trompetes e trompas — não é apenas uma questão de potência absoluta: estes instrumentos têm conteúdo espectral concentrado justamente na banda de sensibilidade máxima do ouvido. Um contrabaixo a 90 dB SPL pode parecer significativamente mais discreto que um trompete ao mesmo nível.</p>
+
+      <h3>Sequência didática sugerida (3h)</h3>
+      <p><strong>0:00–0:30</strong> · Introdução: conceitos de potência, intensidade e pressão sonora. Apresentação das figuras 6.3 e 6.4 de Henrique (Meyer 1995).</p>
+      <p><strong>0:30–1:30</strong> · Prática 1: explorar a aplicação. Estudantes em duplas reproduzem a Figura 6.4 (49 músicos, 118 dB) e comparam com configurações alternativas.</p>
+      <p><strong>1:30–1:45</strong> · Intervalo.</p>
+      <p><strong>1:45–2:30</strong> · Prática 2: cada dupla projeta uma orquestração específica (ex: Mahler Sinfonia 8 vs. Mozart Sinfonia 40) e justifica acusticamente as escolhas históricas.</p>
+      <p><strong>2:30–3:00</strong> · Discussão coletiva sobre balanceamento orquestral, com referências ao tratado de orquestração (Berlioz/Strauss, Adler).</p>
+    </div>
+  </div>
+
+  <div class="references">
+    <h3>Referências</h3>
+    <ol>
+      <li>Fletcher, H. & Munson, W. A. (1933). Loudness, its definition, measurement and calculation. <em>Journal of the Acoustical Society of America</em>, 5(2), 82–108.</li>
+      <li>Henrique, L. L. (2002). <em>Acústica Musical</em>. Lisboa: Fundação Calouste Gulbenkian. [Capítulo 6, Figuras 6.3 e 6.4]</li>
+      <li>ISO 226:2003. <em>Acoustics — Normal equal-loudness-level contours</em>. International Organization for Standardization.</li>
+      <li>Meyer, J. (1995). <em>Akustik und Musikalische Aufführungspraxis</em>. Frankfurt am Main: Verlag das Musikinstrument. [Fonte primária das figuras]</li>
+      <li>Patterson, B. (1974). Musical dynamics. <em>Scientific American</em>, 231(5), 78–95.</li>
+      <li>Strong, W. & Plitnik, G. (1992). <em>Music, Speech, Audio</em>. Provo: Soundprint.</li>
+    </ol>
+  </div>
+</section>
+
+<footer class="colophon">
+  <div>
+    <span class="display">Gama dinâmica orquestral</span><br>
+    Aplicação didática · Acústica Musical
+  </div>
+  <div style="text-align: right;">
+    Prof. Ivan Simurra<br>
+    NICS · UNICAMP · 2026
+  </div>
+</footer>
+
+</div>
+
+<script>
+/* =========================================================================
+   GAMA DINÂMICA ORQUESTRAL · JavaScript
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   1.  DADOS ACÚSTICOS
+   -------------------------------------------------------------------------
+   Níveis de potência sonora médios em dB SPL para cada dinâmica,
+   compilados de:
+   · Meyer (1995) Akustik und Musikalische Aufführungspraxis
+   · Patterson (1974) Musical dynamics
+   · Henrique (2002) Acústica Musical, Cap. 6 (Figs 6.3 e 6.4)
+
+   Os valores representam o nível médio em 1 m, eixo principal de radiação.
+   ------------------------------------------------------------------------- */
+
+const INSTRUMENTS = {
+  // CORDAS
+  violino:     { name: 'Violino',     latin: 'Violinus',    family: 'strings', freqCenter: 800,  defaultDyn: 'mf',
+                 levels: { pp: 62, p: 68, mp: 75, mf: 82, f: 88, ff: 92 } },
+  viola:       { name: 'Viola',       latin: 'Viola',       family: 'strings', freqCenter: 500,  defaultDyn: 'mf',
+                 levels: { pp: 60, p: 66, mp: 72, mf: 80, f: 86, ff: 90 } },
+  violoncelo:  { name: 'Violoncelo',  latin: 'Violoncello', family: 'strings', freqCenter: 300,  defaultDyn: 'mf',
+                 levels: { pp: 64, p: 70, mp: 77, mf: 84, f: 90, ff: 94 } },
+  contrabaixo: { name: 'Contrabaixo', latin: 'Contrabasso', family: 'strings', freqCenter: 100,  defaultDyn: 'mf',
+                 levels: { pp: 66, p: 72, mp: 78, mf: 85, f: 90, ff: 94 } },
+
+  // MADEIRAS
+  flauta:      { name: 'Flauta',      latin: 'Flauto',     family: 'woods', freqCenter: 1200, defaultDyn: 'mf',
+                 levels: { pp: 60, p: 68, mp: 76, mf: 84, f: 92, ff: 96 } },
+  oboe:        { name: 'Oboé',        latin: 'Oboe',       family: 'woods', freqCenter: 1500, defaultDyn: 'mf',
+                 levels: { pp: 68, p: 75, mp: 82, mf: 88, f: 94, ff: 100 } },
+  clarinete:   { name: 'Clarinete',   latin: 'Clarinetto', family: 'woods', freqCenter: 1000, defaultDyn: 'mf',
+                 levels: { pp: 58, p: 66, mp: 75, mf: 84, f: 93, ff: 100 } },
+  fagote:      { name: 'Fagote',      latin: 'Fagotto',    family: 'woods', freqCenter: 500,  defaultDyn: 'mf',
+                 levels: { pp: 68, p: 75, mp: 82, mf: 88, f: 94, ff: 99 } },
+  saxofone:    { name: 'Saxofone',    latin: 'Saxophonus', family: 'woods', freqCenter: 800,  defaultDyn: 'mf',
+                 levels: { pp: 70, p: 78, mp: 85, mf: 92, f: 100, ff: 105 } },
+
+  // METAIS · valores calibrados para reproduzir Fig 6.4 de Henrique (Meyer 1995)
+  trompa:      { name: 'Trompa',      latin: 'Cornu',      family: 'brass', freqCenter: 600,  defaultDyn: 'mf',
+                 levels: { pp: 70, p: 78, mp: 85, mf: 92, f: 100, ff: 106 } },
+  trompete:    { name: 'Trompete',    latin: 'Tuba',       family: 'brass', freqCenter: 1500, defaultDyn: 'mf',
+                 levels: { pp: 70, p: 78, mp: 86, mf: 93, f: 100, ff: 106 } },
+  trombone:    { name: 'Trombone',    latin: 'Trombonus',  family: 'brass', freqCenter: 700,  defaultDyn: 'mf',
+                 levels: { pp: 74, p: 82, mp: 89, mf: 96, f: 104, ff: 109 } },
+  tuba:        { name: 'Tuba',        latin: 'Tuba magna', family: 'brass', freqCenter: 250,  defaultDyn: 'mf',
+                 levels: { pp: 74, p: 82, mp: 88, mf: 95, f: 100, ff: 105 } }
+};
+
+const FAMILIES = {
+  strings: { label: 'Cordas',   latin: 'Archi',   order: ['violino', 'viola', 'violoncelo', 'contrabaixo'] },
+  woods:   { label: 'Madeiras', latin: 'Legni',   order: ['flauta', 'oboe', 'clarinete', 'fagote', 'saxofone'] },
+  brass:   { label: 'Metais',   latin: 'Ottoni',  order: ['trompa', 'trompete', 'trombone', 'tuba'] }
+};
+
+const DYNAMICS = ['pp', 'p', 'mp', 'mf', 'f', 'ff'];
+const DYNAMIC_LABELS = { pp: 'pp', p: 'p', mp: 'mp', mf: 'mf', f: 'f', ff: 'ff' };
+
+/* -------------------------------------------------------------------------
+   2.  PRESETS DE ORQUESTRAÇÃO
+   ------------------------------------------------------------------------- */
+const PRESETS = {
+  silent: {
+    label: 'Silêncio',
+    titleIt: '',
+    desc: 'Zerar todos',
+    state: {}
+  },
+  meyer49: {
+    label: 'Tutti de Meyer',
+    titleIt: '49 músicos',
+    desc: 'Reprodução da Fig. 6.4',
+    state: {
+      violino: { count: 16, dyn: 'ff' }, // 8 + 8 (I e II)
+      viola: { count: 6, dyn: 'ff' },
+      violoncelo: { count: 6, dyn: 'ff' },
+      contrabaixo: { count: 3, dyn: 'ff' },
+      flauta: { count: 2, dyn: 'ff' },
+      oboe: { count: 2, dyn: 'ff' },
+      clarinete: { count: 2, dyn: 'ff' },
+      fagote: { count: 2, dyn: 'ff' },
+      trompa: { count: 4, dyn: 'ff' },
+      trompete: { count: 2, dyn: 'ff' },
+      trombone: { count: 3, dyn: 'ff' },
+      tuba: { count: 1, dyn: 'ff' }
+    }
+  },
+  mozart: {
+    label: 'Mozart',
+    titleIt: 'Sinfonia clássica',
+    desc: '~35 músicos · mf',
+    state: {
+      violino: { count: 12, dyn: 'mf' },
+      viola: { count: 4, dyn: 'mf' },
+      violoncelo: { count: 4, dyn: 'mf' },
+      contrabaixo: { count: 2, dyn: 'mf' },
+      flauta: { count: 2, dyn: 'mf' },
+      oboe: { count: 2, dyn: 'mf' },
+      clarinete: { count: 2, dyn: 'mf' },
+      fagote: { count: 2, dyn: 'mf' },
+      trompa: { count: 2, dyn: 'mf' },
+      trompete: { count: 2, dyn: 'mf' }
+    }
+  },
+  beethoven: {
+    label: 'Beethoven',
+    titleIt: 'Sinfônica romântica',
+    desc: '~55 músicos · f',
+    state: {
+      violino: { count: 16, dyn: 'f' },
+      viola: { count: 8, dyn: 'f' },
+      violoncelo: { count: 6, dyn: 'f' },
+      contrabaixo: { count: 4, dyn: 'f' },
+      flauta: { count: 2, dyn: 'f' },
+      oboe: { count: 2, dyn: 'f' },
+      clarinete: { count: 2, dyn: 'f' },
+      fagote: { count: 2, dyn: 'f' },
+      trompa: { count: 4, dyn: 'f' },
+      trompete: { count: 2, dyn: 'f' },
+      trombone: { count: 3, dyn: 'f' }
+    }
+  },
+  mahler: {
+    label: 'Mahler',
+    titleIt: 'Pós-romântica',
+    desc: '~90 músicos · ff',
+    state: {
+      violino: { count: 20, dyn: 'ff' },
+      viola: { count: 12, dyn: 'ff' },
+      violoncelo: { count: 10, dyn: 'ff' },
+      contrabaixo: { count: 8, dyn: 'ff' },
+      flauta: { count: 4, dyn: 'ff' },
+      oboe: { count: 4, dyn: 'ff' },
+      clarinete: { count: 4, dyn: 'ff' },
+      fagote: { count: 4, dyn: 'ff' },
+      trompa: { count: 8, dyn: 'ff' },
+      trompete: { count: 4, dyn: 'ff' },
+      trombone: { count: 4, dyn: 'ff' },
+      tuba: { count: 1, dyn: 'ff' }
+    }
+  },
+  chamber: {
+    label: 'Câmara',
+    titleIt: 'Quinteto de sopros',
+    desc: '5 músicos · mp',
+    state: {
+      flauta: { count: 1, dyn: 'mp' },
+      oboe: { count: 1, dyn: 'mp' },
+      clarinete: { count: 1, dyn: 'mp' },
+      fagote: { count: 1, dyn: 'mp' },
+      trompa: { count: 1, dyn: 'mp' }
+    }
+  },
+  brass5: {
+    label: 'Quinteto',
+    titleIt: 'de metais · f',
+    desc: '5 metais em forte',
+    state: {
+      trompa: { count: 1, dyn: 'f' },
+      trompete: { count: 2, dyn: 'f' },
+      trombone: { count: 1, dyn: 'f' },
+      tuba: { count: 1, dyn: 'f' }
+    }
+  },
+  strings: {
+    label: 'Cordas',
+    titleIt: 'só cordas · mf',
+    desc: 'Orquestra de cordas',
+    state: {
+      violino: { count: 14, dyn: 'mf' },
+      viola: { count: 6, dyn: 'mf' },
+      violoncelo: { count: 5, dyn: 'mf' },
+      contrabaixo: { count: 3, dyn: 'mf' }
+    }
+  }
+};
+
+/* -------------------------------------------------------------------------
+   3.  ESTADO DA APLICAÇÃO
+   ------------------------------------------------------------------------- */
+const state = {};
+Object.keys(INSTRUMENTS).forEach(key => {
+  state[key] = { count: 0, dyn: INSTRUMENTS[key].defaultDyn };
+});
+
+/* Biblioteca de samples carregada via Web Audio.
+   state.samples[instKey][dyn] = [ { buffer, note, semitones, originalName }, ... ]
+   state.unrecognized = lista de arquivos não reconhecidos para mapeamento manual
+   state.sampleStats = contadores rápidos para a UI                                */
+state.samples = {};
+Object.keys(INSTRUMENTS).forEach(key => {
+  state.samples[key] = { pp: [], p: [], mp: [], mf: [], f: [], ff: [] };
+});
+state.unrecognized = [];
+state.sampleStats = { total: 0, byInstrument: {} };
+
+/* -------------------------------------------------------------------------
+   4.  CÁLCULOS ACÚSTICOS
+   ------------------------------------------------------------------------- */
+function levelOf(instrKey) {
+  const inst = INSTRUMENTS[instrKey];
+  const s = state[instrKey];
+  return inst.levels[s.dyn];
+}
+
+// soma logarítmica de níveis em dB
+function sumDB(levels) {
+  if (levels.length === 0) return -Infinity;
+  const sum = levels.reduce((a, L) => a + Math.pow(10, L / 10), 0);
+  return 10 * Math.log10(sum);
+}
+
+// Nível total de n instrumentos idênticos
+function levelMultiple(L1, n) {
+  if (n <= 0) return -Infinity;
+  return L1 + 10 * Math.log10(n);
+}
+
+function computeFamilyLevel(familyKey) {
+  const levels = [];
+  FAMILIES[familyKey].order.forEach(k => {
+    const s = state[k];
+    if (s.count > 0) {
+      const L1 = levelOf(k);
+      levels.push(levelMultiple(L1, s.count));
+    }
+  });
+  return sumDB(levels);
+}
+
+function computeTotalLevel() {
+  return sumDB(['strings', 'woods', 'brass'].map(f => computeFamilyLevel(f)));
+}
+
+function totalMusicians() {
+  return Object.values(state).reduce((sum, s) => sum + s.count, 0);
+}
+
+// Frequência média ponderada da configuração (para Fletcher-Munson)
+function dominantFrequency() {
+  let weightedSum = 0;
+  let totalWeight = 0;
+  Object.keys(state).forEach(k => {
+    const s = state[k];
+    if (s.count > 0) {
+      const L = levelMultiple(levelOf(k), s.count);
+      const I = Math.pow(10, L / 10);
+      weightedSum += INSTRUMENTS[k].freqCenter * I;
+      totalWeight += I;
+    }
+  });
+  return totalWeight > 0 ? weightedSum / totalWeight : 1000;
+}
+
+/* -------------------------------------------------------------------------
+   5.  CURVAS ISOFÔNICAS · APROXIMAÇÃO ISO 226:2003
+   -------------------------------------------------------------------------
+   Implementação baseada em parâmetros tabulados (α_f, L_U, T_f)
+   da ISO 226:2003 para 29 bandas de 1/3 oitava.
+   ------------------------------------------------------------------------- */
+const ISO226 = {
+  freq:  [20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500],
+  alpha: [0.532, 0.506, 0.480, 0.455, 0.432, 0.409, 0.387, 0.367, 0.349, 0.330, 0.315, 0.301, 0.288, 0.276, 0.267, 0.259, 0.253, 0.250, 0.246, 0.244, 0.243, 0.243, 0.243, 0.242, 0.242, 0.245, 0.254, 0.271, 0.301],
+  Lu:    [-31.6, -27.2, -23.0, -19.1, -15.9, -13.0, -10.3, -8.1, -6.2, -4.5, -3.1, -2.0, -1.1, -0.4, 0.0, 0.3, 0.5, 0.0, -2.7, -4.1, -1.0, 1.7, 2.5, 1.2, -2.1, -7.1, -11.2, -10.7, -3.1],
+  Tf:    [78.5, 68.7, 59.5, 51.1, 44.0, 37.5, 31.5, 26.5, 22.1, 17.9, 14.4, 11.4, 8.6, 6.2, 4.4, 3.0, 2.2, 2.4, 3.5, 1.7, -1.3, -4.2, -6.0, -5.4, -1.5, 6.0, 12.6, 13.9, 12.3]
+};
+
+// dado SPL e freq → calcula fone segundo ISO 226
+function splToPhon(spl, freq) {
+  // achar índice de freq mais próximo (escala log)
+  const f = Math.max(20, Math.min(12500, freq));
+  let i = 0;
+  while (i < ISO226.freq.length - 1 && ISO226.freq[i + 1] < f) i++;
+  // interpolar parâmetros
+  const f1 = ISO226.freq[i], f2 = ISO226.freq[i + 1];
+  const t = (Math.log10(f) - Math.log10(f1)) / (Math.log10(f2) - Math.log10(f1));
+  const a = ISO226.alpha[i] + t * (ISO226.alpha[i + 1] - ISO226.alpha[i]);
+  const Lu = ISO226.Lu[i] + t * (ISO226.Lu[i + 1] - ISO226.Lu[i]);
+  const Tf = ISO226.Tf[i] + t * (ISO226.Tf[i + 1] - ISO226.Tf[i]);
+  // fórmula da ISO 226:2003
+  // A_f = 4.47e-3 (10^(0.025 L_N) - 1.15) + [0.4 · 10^((T_f + L_U)/10 - 9)]^α_f
+  // L_p = 10/α_f · log10(A_f) - L_U + 94
+  // invertendo para L_N (fones):
+  const Lp = spl;
+  const term1 = Math.pow(0.4 * Math.pow(10, (Lp + Lu) / 10 - 9), a);
+  const term2 = Math.pow(0.4 * Math.pow(10, (Tf + Lu) / 10 - 9), a);
+  const Bf = term1 - term2 + 0.005135;
+  if (Bf <= 0) return 0;
+  const Ln = 40 * Math.log10(Bf) + 94;
+  return Math.max(0, Ln);
+}
+
+// dado fone (L_N) e freq → calcula o SPL necessário
+function phonToSpl(phon, freq) {
+  const f = Math.max(20, Math.min(12500, freq));
+  let i = 0;
+  while (i < ISO226.freq.length - 1 && ISO226.freq[i + 1] < f) i++;
+  const f1 = ISO226.freq[i], f2 = ISO226.freq[i + 1];
+  const t = (Math.log10(f) - Math.log10(f1)) / (Math.log10(f2) - Math.log10(f1));
+  const a = ISO226.alpha[i] + t * (ISO226.alpha[i + 1] - ISO226.alpha[i]);
+  const Lu = ISO226.Lu[i] + t * (ISO226.Lu[i + 1] - ISO226.Lu[i]);
+  const Tf = ISO226.Tf[i] + t * (ISO226.Tf[i + 1] - ISO226.Tf[i]);
+  const Af = (4.47e-3) * (Math.pow(10, 0.025 * phon) - 1.15)
+           + Math.pow(0.4 * Math.pow(10, (Tf + Lu) / 10 - 9), a);
+  const Lp = (10 / a) * Math.log10(Af) - Lu + 94;
+  return Lp;
+}
+
+/* -------------------------------------------------------------------------
+   6.  ÍCONES SVG · INSTRUMENTOS
+   ------------------------------------------------------------------------- */
+const ICONS = {
+  violino:     '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 c-0.5 0-0.8 0.3-0.8 0.8 L11 8 c-1.5 0.3-2.8 1-3.8 2.2-1.2 1.5-1.7 3.2-1.5 5 0.2 1.8 1 3.4 2.3 4.6 1.3 1.2 3 1.8 4.6 1.6 1.6-0.2 3-1 4-2.3 1-1.3 1.4-2.9 1.2-4.5-0.2-1.8-1-3.4-2.3-4.6-1-1-2.2-1.5-3.4-1.7L13 2.8 C13 2.3 12.5 2 12 2 z M11 12 a1 1 0 1 0 0 2 a1 1 0 0 0 0-2 z M14 14 a1 1 0 1 0 0 2 a1 1 0 0 0 0-2 z"/></svg>',
+  viola:       '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 c-0.5 0-0.8 0.3-0.8 0.8 L11 8 c-1.5 0.3-2.8 1-3.8 2.2-1.2 1.5-1.7 3.2-1.5 5 0.2 1.8 1 3.4 2.3 4.6 1.3 1.2 3 1.8 4.6 1.6 1.6-0.2 3-1 4-2.3 1-1.3 1.4-2.9 1.2-4.5-0.2-1.8-1-3.4-2.3-4.6-1-1-2.2-1.5-3.4-1.7L13 2.8 C13 2.3 12.5 2 12 2 z"/></svg>',
+  violoncelo:  '<svg viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="14" rx="5" ry="7"/><rect x="11" y="2" width="2" height="6"/></svg>',
+  contrabaixo: '<svg viewBox="0 0 24 24" fill="currentColor"><ellipse cx="12" cy="15" rx="6" ry="7"/><rect x="11" y="1" width="2" height="7"/></svg>',
+  flauta:      '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="11" width="20" height="2" rx="1"/><circle cx="6" cy="12" r="0.8" fill="var(--paper)"/><circle cx="10" cy="12" r="0.8" fill="var(--paper)"/><circle cx="14" cy="12" r="0.8" fill="var(--paper)"/><circle cx="18" cy="12" r="0.8" fill="var(--paper)"/></svg>',
+  oboe:        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 2 L13 2 L13 6 L14 6 L14 20 C14 21 13 22 12 22 C11 22 10 21 10 20 L10 6 L11 6 Z"/></svg>',
+  clarinete:   '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="10" y="2" width="4" height="18" rx="1"/><path d="M9 20 L15 20 L16 22 L8 22 Z"/></svg>',
+  fagote:      '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 2 L11 2 L11 12 L14 12 L14 2 L16 2 L16 14 C16 15 15 16 14 16 L11 16 L11 22 L9 22 Z"/></svg>',
+  saxofone:    '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L12 14 C12 17 14 19 16 19 L18 19 L18 22 L11 22 C9 22 7 20 7 18 L7 14 L12 14"/></svg>',
+  trompa:      '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="10" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 12 L22 9 L22 15 Z"/></svg>',
+  trompete:    '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="11" width="14" height="2"/><path d="M17 8 L22 8 L22 16 L17 16 Z"/></svg>',
+  trombone:    '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="11" width="16" height="2"/><path d="M18 7 L22 7 L22 17 L18 17 Z"/></svg>',
+  tuba:        '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="14" r="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="14" r="2.5"/><rect x="11" y="2" width="2" height="6"/></svg>'
+};
+
+/* -------------------------------------------------------------------------
+   7.  RENDERIZAÇÃO · PAINEL DE NAIPES
+   ------------------------------------------------------------------------- */
+function renderFamilies() {
+  const container = document.getElementById('families-col');
+  container.innerHTML = '';
+
+  Object.keys(FAMILIES).forEach(famKey => {
+    const fam = FAMILIES[famKey];
+    const panel = document.createElement('div');
+    panel.className = 'section-panel';
+    panel.dataset.family = famKey;
+
+    let html = `
+      <div class="section-panel-header">
+        <div>
+          <div class="section-panel-title">${fam.label}</div>
+        </div>
+        <div class="section-panel-meta">
+          <span class="famcount" data-family="${famKey}">0</span> músicos · <strong class="famlevel" data-family="${famKey}">—</strong> dB
+        </div>
+      </div>
+    `;
+
+    fam.order.forEach(instrKey => {
+      const inst = INSTRUMENTS[instrKey];
+      const s = state[instrKey];
+      html += `
+        <div class="instrument-row ${s.count === 0 ? 'row-zero' : ''}" data-instr="${instrKey}">
+          <div class="instrument-icon" style="color: var(--accent);">${ICONS[instrKey]}</div>
+          <div class="instrument-name">
+            ${inst.name}<span class="latin">${inst.latin}</span>
+          </div>
+          <div class="counter">
+            <button class="counter-btn" data-action="dec" aria-label="Remover">−</button>
+            <span class="counter-value" data-count="${instrKey}">${s.count}</span>
+            <button class="counter-btn" data-action="inc" aria-label="Adicionar">+</button>
+          </div>
+          <div class="dynamic-select" data-dyn-select="${instrKey}">
+            ${DYNAMICS.map(d => `<button class="dynamic-btn ${s.dyn === d ? 'active' : ''}" data-dyn="${d}">${DYNAMIC_LABELS[d]}</button>`).join('')}
+          </div>
+          <div class="spl-readout">
+            <span class="val" data-spl="${instrKey}">${inst.levels[s.dyn]}</span> dB
+          </div>
+        </div>
+      `;
+    });
+
+    panel.innerHTML = html;
+    container.appendChild(panel);
+  });
+
+  // Listeners
+  container.addEventListener('click', e => {
+    const counterBtn = e.target.closest('.counter-btn');
+    const dynBtn = e.target.closest('.dynamic-btn');
+
+    if (counterBtn) {
+      const row = counterBtn.closest('.instrument-row');
+      const key = row.dataset.instr;
+      if (counterBtn.dataset.action === 'inc') {
+        state[key].count = Math.min(40, state[key].count + 1);
+      } else {
+        state[key].count = Math.max(0, state[key].count - 1);
+      }
+      updateAll();
+    }
+
+    if (dynBtn) {
+      const select = dynBtn.closest('.dynamic-select');
+      const key = select.dataset.dynSelect;
+      state[key].dyn = dynBtn.dataset.dyn;
+      updateAll();
+    }
+  });
+}
+
+function updateFamilyPanels() {
+  Object.keys(FAMILIES).forEach(famKey => {
+    const fam = FAMILIES[famKey];
+    let famCount = 0;
+    fam.order.forEach(instrKey => {
+      const s = state[instrKey];
+      const inst = INSTRUMENTS[instrKey];
+      famCount += s.count;
+
+      const countEl = document.querySelector(`[data-count="${instrKey}"]`);
+      const splEl = document.querySelector(`[data-spl="${instrKey}"]`);
+      const row = document.querySelector(`.instrument-row[data-instr="${instrKey}"]`);
+
+      if (countEl) countEl.textContent = s.count;
+      if (splEl) splEl.textContent = inst.levels[s.dyn];
+      if (row) row.classList.toggle('row-zero', s.count === 0);
+
+      // atualizar dinâmica
+      const dynBtns = document.querySelectorAll(`[data-dyn-select="${instrKey}"] .dynamic-btn`);
+      dynBtns.forEach(b => b.classList.toggle('active', b.dataset.dyn === s.dyn));
+    });
+
+    document.querySelector(`.famcount[data-family="${famKey}"]`).textContent = famCount;
+    const famLevel = computeFamilyLevel(famKey);
+    document.querySelector(`.famlevel[data-family="${famKey}"]`).textContent =
+      isFinite(famLevel) ? famLevel.toFixed(1) : '—';
+  });
+}
+
+/* -------------------------------------------------------------------------
+   8.  VU METER · SVG ANIMADO
+   ------------------------------------------------------------------------- */
+function renderVUMeter() {
+  const svg = document.getElementById('vu-svg');
+  // Construir VU meter analógico estilo vintage
+  // arco de -180° a 0° (parte superior do círculo)
+  // escala 40 a 130 dB
+
+  const cx = 180, cy = 180, r = 145;
+  const startAngle = 200; // graus
+  const endAngle = -20;   // graus
+  const angleSpan = startAngle - endAngle;
+
+  // converter dB para ângulo
+  function dbToAngle(db) {
+    const dbMin = 40, dbMax = 130;
+    const t = Math.max(0, Math.min(1, (db - dbMin) / (dbMax - dbMin)));
+    return startAngle - t * angleSpan;
+  }
+
+  function polar(angle, radius) {
+    const rad = (angle * Math.PI) / 180;
+    return [cx - Math.cos(rad) * radius, cy - Math.sin(rad) * radius];
+  }
+
+  let html = '';
+
+  // arco de fundo
+  const arcStart = polar(startAngle, r);
+  const arcEnd = polar(endAngle, r);
+  html += `<path d="M ${arcStart[0]} ${arcStart[1]} A ${r} ${r} 0 0 1 ${arcEnd[0]} ${arcEnd[1]}"
+           fill="none" stroke="rgba(232, 184, 95, 0.2)" stroke-width="2"/>`;
+
+  // arco gradiente para nível atual
+  html += `<defs>
+    <linearGradient id="vu-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5a8c6a"/>
+      <stop offset="60%" stop-color="#c69845"/>
+      <stop offset="85%" stop-color="#c54a2a"/>
+      <stop offset="100%" stop-color="#8c1a08"/>
+    </linearGradient>
+    <filter id="needle-shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>`;
+
+  // marcas principais (cada 10 dB)
+  for (let db = 40; db <= 130; db += 5) {
+    const isMajor = (db % 10 === 0);
+    const ang = dbToAngle(db);
+    const [x1, y1] = polar(ang, r);
+    const [x2, y2] = polar(ang, r - (isMajor ? 12 : 6));
+    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+             stroke="rgba(244, 236, 216, ${isMajor ? 0.8 : 0.45})" stroke-width="${isMajor ? 1.5 : 1}"/>`;
+
+    if (isMajor) {
+      const [tx, ty] = polar(ang, r - 26);
+      const color = db >= 110 ? '#e87a4a' : db >= 100 ? '#e8b85f' : '#f4ecd8';
+      html += `<text x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="middle"
+               fill="${color}" font-family="JetBrains Mono, monospace" font-size="11" font-weight="500">${db}</text>`;
+    }
+  }
+
+  // setor colorido representando o nível
+  html += `<g id="vu-arc-group"></g>`;
+
+  // marcas dinâmicas (pp, p, mp, mf, f, ff)
+  const dynamicMarks = [
+    { db: 50, label: 'pp' }, { db: 65, label: 'p' }, { db: 75, label: 'mp' },
+    { db: 88, label: 'mf' }, { db: 100, label: 'f' }, { db: 115, label: 'ff' }
+  ];
+  dynamicMarks.forEach(m => {
+    const ang = dbToAngle(m.db);
+    const [tx, ty] = polar(ang, r + 14);
+    html += `<text x="${tx}" y="${ty}" text-anchor="middle" dominant-baseline="middle"
+             fill="rgba(232, 184, 95, 0.85)" font-family="Cormorant Garamond, serif"
+             font-size="14" font-style="italic" font-weight="600">${m.label}</text>`;
+  });
+
+  // pivot central
+  html += `<circle cx="${cx}" cy="${cy}" r="6" fill="#3a2a1a" stroke="#e8b85f" stroke-width="1"/>`;
+  html += `<circle cx="${cx}" cy="${cy}" r="2" fill="#e8b85f"/>`;
+
+  // agulha (será atualizada dinamicamente)
+  html += `<g id="vu-needle" transform="rotate(0 ${cx} ${cy})">
+    <line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - r + 20}"
+          stroke="#1a0f08" stroke-width="2.5" stroke-linecap="round" filter="url(#needle-shadow)"/>
+    <line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - r + 20}"
+          stroke="#e87a4a" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy + 18}"
+          stroke="#3a2a1a" stroke-width="3" stroke-linecap="round"/>
+  </g>`;
+
+  // ajustar viewBox para SVG quadrado-ish
+  svg.setAttribute('viewBox', '20 30 320 180');
+  svg.innerHTML = html;
+}
+
+function updateVUMeter(db) {
+  const cx = 180, cy = 180;
+  const startAngle = 200, endAngle = -20;
+  const angleSpan = startAngle - endAngle;
+  const dbMin = 40, dbMax = 130;
+
+  function dbToAngle(d) {
+    const t = Math.max(0, Math.min(1, (d - dbMin) / (dbMax - dbMin)));
+    return startAngle - t * angleSpan;
+  }
+
+  function polar(angle, radius) {
+    const rad = (angle * Math.PI) / 180;
+    return [cx - Math.cos(rad) * radius, cy - Math.sin(rad) * radius];
+  }
+
+  const needle = document.getElementById('vu-needle');
+  const arcGroup = document.getElementById('vu-arc-group');
+  if (!needle || !arcGroup) return;
+
+  // animar a agulha
+  const targetAngle = isFinite(db) ? dbToAngle(db) : startAngle;
+  const needleRotation = 90 - targetAngle;
+  needle.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+  needle.setAttribute('transform', `rotate(${needleRotation} ${cx} ${cy})`);
+
+  // arco preenchido
+  const r = 145;
+  if (isFinite(db) && db > 40) {
+    const angStart = startAngle;
+    const angEnd = dbToAngle(db);
+    const [sx, sy] = polar(angStart, r);
+    const [ex, ey] = polar(angEnd, r);
+    const largeArc = (angStart - angEnd) > 180 ? 1 : 0;
+    arcGroup.innerHTML = `<path d="M ${sx} ${sy} A ${r} ${r} 0 ${largeArc} 1 ${ex} ${ey}"
+             fill="none" stroke="url(#vu-gradient)" stroke-width="8" opacity="0.75"/>`;
+  } else {
+    arcGroup.innerHTML = '';
+  }
+}
+
+/* -------------------------------------------------------------------------
+   9.  CURVAS DE FLETCHER-MUNSON · CANVAS
+   ------------------------------------------------------------------------- */
+function renderFMCurves() {
+  const canvas = document.getElementById('fm-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // tamanho do canvas com DPR
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width;
+  const H = rect.height;
+  const padL = 44, padR = 12, padT = 10, padB = 32;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+
+  // Limpar
+  ctx.fillStyle = '#faf3e0';
+  ctx.fillRect(0, 0, W, H);
+
+  // log freq scale (20 Hz a 16 kHz)
+  const fMin = 20, fMax = 16000;
+  function xOf(f) {
+    return padL + plotW * (Math.log10(f) - Math.log10(fMin)) / (Math.log10(fMax) - Math.log10(fMin));
+  }
+  function yOf(db) {
+    const dbMin = -10, dbMax = 130;
+    return padT + plotH * (1 - (db - dbMin) / (dbMax - dbMin));
+  }
+
+  // grade
+  ctx.strokeStyle = 'rgba(26, 20, 16, 0.08)';
+  ctx.lineWidth = 0.5;
+  ctx.font = '10px "JetBrains Mono", monospace';
+  ctx.fillStyle = 'rgba(26, 20, 16, 0.55)';
+
+  // linhas verticais (freq)
+  const freqTicks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+  freqTicks.forEach(f => {
+    const x = xOf(f);
+    ctx.beginPath();
+    ctx.moveTo(x, padT);
+    ctx.lineTo(x, H - padB);
+    ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillText(f >= 1000 ? (f / 1000) + 'k' : f, x, H - padB + 14);
+  });
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(26, 20, 16, 0.7)';
+  ctx.font = 'italic 11px "EB Garamond", serif';
+  ctx.fillText('Hz', (padL + W - padR) / 2, H - 4);
+
+  // linhas horizontais (dB)
+  ctx.fillStyle = 'rgba(26, 20, 16, 0.55)';
+  ctx.font = '10px "JetBrains Mono", monospace';
+  for (let db = 0; db <= 120; db += 20) {
+    const y = yOf(db);
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(W - padR, y);
+    ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillText(db, padL - 6, y + 3);
+  }
+  ctx.save();
+  ctx.translate(12, (padT + H - padB) / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(26, 20, 16, 0.7)';
+  ctx.font = 'italic 11px "EB Garamond", serif';
+  ctx.fillText('dB SPL', 0, 0);
+  ctx.restore();
+
+  // borda do plot
+  ctx.strokeStyle = 'rgba(26, 20, 16, 0.4)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(padL, padT, plotW, plotH);
+
+  // curvas isofônicas (fones: 10, 20, 40, 60, 80, 100)
+  const phons = [0, 10, 20, 40, 60, 80, 100];
+  const curveColors = ['rgba(107, 38, 21, 0.3)', 'rgba(107, 38, 21, 0.4)', 'rgba(107, 38, 21, 0.5)', 'rgba(107, 38, 21, 0.65)', 'rgba(107, 38, 21, 0.75)', 'rgba(107, 38, 21, 0.85)', 'rgba(107, 38, 21, 0.95)'];
+
+  phons.forEach((phon, i) => {
+    ctx.strokeStyle = curveColors[i];
+    ctx.lineWidth = phon === 80 ? 1.8 : 1.2;
+    ctx.beginPath();
+    let started = false;
+    for (let logF = Math.log10(20); logF <= Math.log10(12500); logF += 0.02) {
+      const f = Math.pow(10, logF);
+      const spl = phonToSpl(phon, f);
+      const x = xOf(f);
+      const y = yOf(spl);
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // rótulo
+    const labelF = 50;
+    const labelSpl = phonToSpl(phon, labelF);
+    ctx.fillStyle = 'rgba(107, 38, 21, 0.8)';
+    ctx.font = 'italic 10px "Cormorant Garamond", serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(phon + ' fones', xOf(labelF) - 22, yOf(labelSpl) - 4);
+  });
+
+  // Ponto de operação atual
+  const totalDB = computeTotalLevel();
+  const domFreq = dominantFrequency();
+  if (isFinite(totalDB) && totalDB > -10) {
+    const px = xOf(domFreq);
+    const py = yOf(totalDB);
+
+    // glow
+    const grd = ctx.createRadialGradient(px, py, 0, px, py, 20);
+    grd.addColorStop(0, 'rgba(232, 184, 95, 0.5)');
+    grd.addColorStop(1, 'rgba(232, 184, 95, 0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(px, py, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ponto principal
+    ctx.fillStyle = '#6b2615';
+    ctx.beginPath();
+    ctx.arc(px, py, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#f4ecd8';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // anotação
+    ctx.fillStyle = '#1a1410';
+    ctx.font = '600 12px "JetBrains Mono", monospace';
+    ctx.textAlign = 'left';
+    const labelX = px + 12 < W - padR - 80 ? px + 12 : px - 90;
+    ctx.fillText(`${totalDB.toFixed(1)} dB @ ${domFreq < 1000 ? Math.round(domFreq) + ' Hz' : (domFreq/1000).toFixed(2) + ' kHz'}`, labelX, py - 8);
+  }
+}
+
+/* -------------------------------------------------------------------------
+   10. PALCO DA ORQUESTRA · SVG
+   ------------------------------------------------------------------------- */
+function renderStage() {
+  const svg = document.getElementById('stage-svg');
+
+  // Palco em forma de leque - semicírculo aberto para o público (frente, parte de baixo)
+  // dimensões: 900x480
+  const cx = 450, cy = 480, maxR = 380;
+
+  let html = '';
+
+  // arcos do palco (3 níveis)
+  for (let i = 1; i <= 3; i++) {
+    const r = (maxR * i) / 4;
+    html += `<path d="M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}"
+             fill="none" stroke="rgba(232, 184, 95, 0.15)" stroke-width="0.5" stroke-dasharray="2 4"/>`;
+  }
+
+  // Limite externo do palco
+  html += `<path d="M ${cx - maxR} ${cy} A ${maxR} ${maxR} 0 0 1 ${cx + maxR} ${cy}"
+           fill="none" stroke="rgba(232, 184, 95, 0.3)" stroke-width="1"/>`;
+
+  // "Maestro" / podium
+  html += `<circle cx="${cx}" cy="${cy - 20}" r="6" fill="none" stroke="rgba(232, 184, 95, 0.6)" stroke-width="1.5"/>`;
+  html += `<text x="${cx}" y="${cy - 32}" text-anchor="middle" fill="rgba(232, 184, 95, 0.7)"
+           font-family="Cormorant Garamond, serif" font-style="italic" font-size="11">maestro</text>`;
+
+  // Função: distribuir musicos em arcos
+  // strings (3 arcos: violino I/II, viola, vc/cb) na frente
+  // woods (2 fileiras) no meio
+  // brass atrás
+  function placeOnArc(items, arcRadius, angleStart, angleEnd, color) {
+    let dots = '';
+    const n = items.length;
+    if (n === 0) return '';
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      const ang = angleStart + t * (angleEnd - angleStart);
+      const rad = (ang * Math.PI) / 180;
+      const x = cx + Math.cos(rad) * arcRadius;
+      const y = cy - Math.sin(rad) * arcRadius * 0.95; // leve achatamento
+      const size = items[i].size || 4;
+      dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${size}"
+               fill="${color}" stroke="rgba(20, 14, 8, 0.6)" stroke-width="0.5" opacity="0.9"/>`;
+    }
+    return dots;
+  }
+
+  // Strings na frente (mais próximas do público - menor raio)
+  const violinos = state.violino.count;
+  const violas = state.viola.count;
+  const violoncelos = state.violoncelo.count;
+  const contrabaixos = state.contrabaixo.count;
+
+  // Violinos I (esquerda) e II (direita) - assumir metade pra cada
+  const vI = Math.ceil(violinos / 2);
+  const vII = Math.floor(violinos / 2);
+
+  // Violinos I: 150°-110°
+  html += placeOnArc(Array(vI).fill({ size: 4 }), 110, 165, 115, '#4a6b8a');
+  // Violinos II: 110°-85°
+  html += placeOnArc(Array(vII).fill({ size: 4 }), 110, 115, 95, '#5a7b9a');
+  // Violas: 85°-65°
+  html += placeOnArc(Array(violas).fill({ size: 4 }), 110, 95, 65, '#6a8baa');
+  // Violoncelos: 65°-30°
+  html += placeOnArc(Array(violoncelos).fill({ size: 4 }), 110, 65, 30, '#3a5b7a');
+  // Contrabaixos: 30°-15°, arco mais externo
+  html += placeOnArc(Array(contrabaixos).fill({ size: 5 }), 140, 35, 10, '#2c4a6b');
+
+  // Woodwinds no meio
+  const flauta = state.flauta.count;
+  const oboe = state.oboe.count;
+  const clarinete = state.clarinete.count;
+  const fagote = state.fagote.count;
+  const saxofone = state.saxofone.count;
+
+  // Flauta+Oboé fileira 1: 110°-70°
+  html += placeOnArc(Array(flauta).fill({ size: 4 }), 200, 145, 115, '#7a8b5a');
+  html += placeOnArc(Array(oboe).fill({ size: 4 }), 200, 115, 90, '#8a9b6a');
+  // Clarinete+Fagote+Sax fileira 2
+  html += placeOnArc(Array(clarinete).fill({ size: 4 }), 230, 100, 75, '#6a7b4a');
+  html += placeOnArc(Array(fagote).fill({ size: 4 }), 230, 75, 50, '#5a6b3a');
+  html += placeOnArc(Array(saxofone).fill({ size: 4 }), 230, 50, 30, '#9aa56a');
+
+  // Brass atrás (maior raio)
+  const trompa = state.trompa.count;
+  const trompete = state.trompete.count;
+  const trombone = state.trombone.count;
+  const tuba = state.tuba.count;
+
+  // Trompas: 150°-115°
+  html += placeOnArc(Array(trompa).fill({ size: 5 }), 290, 150, 115, '#b06a3a');
+  // Trompetes: 115°-90°
+  html += placeOnArc(Array(trompete).fill({ size: 5 }), 290, 110, 85, '#c47a4a');
+  // Trombones: 90°-55°
+  html += placeOnArc(Array(trombone).fill({ size: 5 }), 290, 85, 55, '#8a4a1a');
+  // Tuba: 55°-35°
+  html += placeOnArc(Array(tuba).fill({ size: 6 }), 290, 50, 30, '#6a3a0a');
+
+  // se TUDO está vazio, mostrar placeholder
+  if (totalMusicians() === 0) {
+    html += `<text x="${cx}" y="${cy - 200}" text-anchor="middle"
+             fill="rgba(244, 236, 216, 0.4)"
+             font-family="Cormorant Garamond, serif"
+             font-style="italic" font-size="22">o palco aguarda</text>`;
+  }
+
+  svg.innerHTML = html;
+}
+
+/* -------------------------------------------------------------------------
+   11. PRESETS
+   ------------------------------------------------------------------------- */
+function renderPresets() {
+  const grid = document.getElementById('presets-grid');
+  grid.innerHTML = '';
+
+  Object.keys(PRESETS).forEach(key => {
+    const p = PRESETS[key];
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn';
+    btn.innerHTML = `
+      <div class="preset-btn-title">${p.label}${p.titleIt ? ' <span class="it">' + p.titleIt + '</span>' : ''}</div>
+      <div class="preset-btn-meta">${p.desc}</div>
+    `;
+    btn.addEventListener('click', () => applyPreset(key));
+    grid.appendChild(btn);
+  });
+}
+
+function applyPreset(key) {
+  const preset = PRESETS[key];
+  // zerar tudo primeiro
+  Object.keys(state).forEach(k => {
+    state[k].count = 0;
+    state[k].dyn = INSTRUMENTS[k].defaultDyn;
+  });
+  // aplicar
+  Object.keys(preset.state).forEach(k => {
+    state[k].count = preset.state[k].count;
+    state[k].dyn = preset.state[k].dyn;
+  });
+  updateAll();
+}
+
+/* -------------------------------------------------------------------------
+   11b. PARSER DE SAMPLES · multi-formato
+   -------------------------------------------------------------------------
+   Suporta bancos comuns de orquestra:
+   - FULLSOL / SOL2 (IRCAM):     Vn-ord-A4-ff-N.wav
+   - Philharmonia Orchestra:     violin_A4_1_forte_arco-normal.mp3
+   - University of Iowa MIS:     Violin.arco.ff.sulG.A4.stereo.aif
+   - VSL e variantes:            Vn_susVib_A4_p.wav
+   - Genérico:                   qualquer-nome-com-A4-mf.wav
+   - Por estrutura de pastas:    violino/mf/A4.wav  (pasta dá inst/dyn)
+   ----------------------------------------------------------------------- */
+
+const INSTRUMENT_ALIASES = {
+  // chave canônica deste app → strings que podem aparecer no nome do arquivo ou pasta
+  violino:     ['violin1','violini1','violin2','violini2','violini','violino','violin','vln','vn','vl'],
+  viola:       ['viola','vla','va'],
+  violoncelo:  ['violoncello','violoncelo','cello','vlc','vc'],
+  contrabaixo: ['doublebass','double-bass','contrabass','contrabasso','contrabaixo','db','cb','kb'],
+  flauta:      ['flute','flauta','flauto','fl'],
+  oboe:        ['oboe','oboé','ob'],
+  clarinete:   ['bbclarinet','clarinetbb','eflatclarinet','clarinet','clarinete','clarinetto','clar','clt','cl'],
+  fagote:      ['bassoon','fagotto','fagote','bsn','bn','fg'],
+  saxofone:    ['altosaxophone','tenorsaxophone','sopranosaxophone','baritonesaxophone','saxophone','saxofone','asax','tsax','sax','as','ts'],
+  trompa:      ['frenchhorn','french-horn','corno','trompa','horn','hn','hr','fh','cor'],
+  trompete:    ['ctrumpet','btrumpet','bbtrumpet','trumpet','trompete','tromba','trp','tpt','tp'],
+  trombone:    ['basstrombone','tenortrombone','trombone','trbn','tbn','trb','tb','tn'],
+  tuba:        ['basstuba','tuba','tba','tu']
+};
+
+// Pré-ordena por comprimento decrescente — para "violin2" bater antes de "violin"
+const ALIAS_ORDERED = Object.entries(INSTRUMENT_ALIASES)
+  .flatMap(([key, aliases]) => aliases.map(a => ({ key, alias: a.toLowerCase() })))
+  .sort((a, b) => b.alias.length - a.alias.length);
+
+function detectInstrument(str) {
+  // Estratégia em duas passadas para evitar falsos positivos:
+  // 1) Aliases longos (≥4 chars) podem casar como substring (FULLSOL usa compactos)
+  // 2) Aliases curtos só batem como token isolado, prefixo seguido de dígito,
+  //    ou prefixo seguido de qualificador de afinação (C, Bb, B, F, Eb, A) —
+  //    para padrões como TpC (Trumpet in C), TpBb, HnF, ClBb
+  const clean = str.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const tokens = str.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  // Pass 1: longos
+  for (const { key, alias } of ALIAS_ORDERED) {
+    if (alias.length >= 4 && clean.includes(alias)) return key;
+  }
+  // Pass 2: curtos — exigir token exato, prefixo+dígito ou prefixo+qualificador-de-afinação
+  // Qualificadores reconhecidos como sufixo curto: bb, eb, c, b, f, a, d, g (chave do instrumento)
+  for (const { key, alias } of ALIAS_ORDERED) {
+    if (alias.length >= 4) continue;
+    if (tokens.includes(alias)) return key;
+    // prefixo seguido por dígito (Vn1, Tp2, Vc3) — somente no nome do arquivo
+    const reDigit = new RegExp(`(?:^|[^a-z])${alias}\\d`, 'i');
+    if (reDigit.test(str)) return key;
+    // prefixo seguido por qualificador de afinação (TpC, TpBb, HnF, ClBb) — comum no FULLSOL
+    const reKey = new RegExp(`(?:^|[^a-z])${alias}(bb|eb|c|b|d|e|f|g|a)(?=[^a-z]|$)`, 'i');
+    if (reKey.test(str)) return key;
+  }
+  return null;
+}
+
+// Detecta nota musical (A4, C#3, Bb2, Cs3, Cf3 / Cb3)
+function detectNote(str) {
+  const noteRegex = /(?:^|[^a-z])([A-Ga-g])([#♯sb♭fF]?)(-?[0-9])(?:[^0-9]|$)/;
+  const m = str.match(noteRegex);
+  if (!m) return null;
+  const letter = m[1].toUpperCase();
+  let acc = '';
+  const accChar = m[2].toLowerCase();
+  if (accChar === '#' || accChar === '♯' || accChar === 's') acc = '#';
+  else if (accChar === 'b' || accChar === '♭' || accChar === 'f') acc = 'b';
+  return letter + acc + m[3];
+}
+
+// Converte nota para semitons (referência: A4 = 69 MIDI)
+function noteToSemitones(note) {
+  if (!note) return null;
+  const m = note.match(/^([A-G])([#b]?)(-?[0-9])$/);
+  if (!m) return null;
+  const base = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 }[m[1]];
+  const acc = m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0;
+  const oct = parseInt(m[3], 10);
+  return (oct + 1) * 12 + base + acc; // MIDI number
+}
+
+// Aliases de dinâmica
+const DYN_ALIASES = {
+  pp: ['pp','pianissimo','ppp'],
+  p:  ['piano','p'],                  // 'p' aceito como token isolado depois de 'pp','piano','mp'
+  mp: ['mp','mezzopiano','mezzo-piano'],
+  mf: ['mf','mezzoforte','mezzo-forte'],
+  f:  ['f','forte'],
+  ff: ['ff','fortissimo','fff']
+};
+const DYN_ALIAS_MAP = (() => {
+  const m = {};
+  for (const k in DYN_ALIASES) for (const a of DYN_ALIASES[k]) m[a.toLowerCase()] = k;
+  return m;
+})();
+const DYN_ALIASES_SORTED = Object.keys(DYN_ALIAS_MAP).sort((a, b) => b.length - a.length);
+
+function detectDynamic(str) {
+  const lower = str.toLowerCase();
+  // Forma compacta sem pontuação — para casar 'mezzo-piano' como 'mezzopiano'
+  const compact = lower.replace(/[^a-z]/g, '');
+  const tokens = lower.split(/[^a-z0-9]+/).filter(Boolean);
+
+  // Pass 1: aliases longos (≥4 chars) na forma compacta — não risco de ambiguidade
+  for (const a of DYN_ALIASES_SORTED) {
+    if (a.length >= 4 && compact.includes(a.replace(/-/g, ''))) {
+      return DYN_ALIAS_MAP[a];
+    }
+  }
+  // Pass 2: match exato por token (do mais longo ao mais curto)
+  for (const a of DYN_ALIASES_SORTED) {
+    if (a.length < 4 && tokens.includes(a)) return DYN_ALIAS_MAP[a];
+  }
+  return null;
+}
+
+function parseSampleFile(filename, fullPath) {
+  // Extrai: instrumento, nota, dinâmica do caminho completo
+  const path = (fullPath || filename).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const noExt = path.replace(/\.[^./]+$/, '');
+  const parts = noExt.split(/[\/\\]/);
+
+  // 1) Instrumento: prioriza pastas (mais profundo → raiz), depois nome do arquivo
+  let inst = null;
+  for (let i = parts.length - 2; i >= 0 && !inst; i--) {
+    inst = detectInstrument(parts[i]);
+  }
+  if (!inst) inst = detectInstrument(parts[parts.length - 1]);
+
+  // 2) Nota: nome do arquivo prioritário, depois pastas
+  const filePart = parts[parts.length - 1];
+  let note = detectNote(filePart);
+  if (!note) {
+    for (let i = parts.length - 2; i >= 0 && !note; i--) {
+      note = detectNote(parts[i]);
+    }
+  }
+
+  // 3) Dinâmica: percorre caminho inteiro (nome + pastas como tokens)
+  const fullStr = parts.join(' ');
+  const dynamic = detectDynamic(fullStr) || 'mf';
+
+  return { inst, note, dynamic, originalName: filename };
+}
+
+/* -------------------------------------------------------------------------
+   11c. LOADER DE SAMPLES · drag-drop + folder + manual
+   ------------------------------------------------------------------------- */
+async function loadSampleFiles(files) {
+  if (!audioCtx) initAudio();
+  if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+  let loaded = 0, unrecog = 0, failed = 0;
+  const errors = [];
+
+  for (const file of files) {
+    const fullPath = file.webkitRelativePath || file.relativePath || file.name;
+    // Aceita só áudio
+    if (!/\.(wav|aif{1,2}|aiff|mp3|ogg|flac|m4a|webm)$/i.test(file.name)) continue;
+
+    const parsed = parseSampleFile(file.name, fullPath);
+    if (!parsed.inst) {
+      state.unrecognized.push({ file, parsed, fullPath });
+      unrecog++;
+      continue;
+    }
+
+    try {
+      const arrBuf = await file.arrayBuffer();
+      const audioBuf = await audioCtx.decodeAudioData(arrBuf);
+      const semitones = noteToSemitones(parsed.note);
+      state.samples[parsed.inst][parsed.dynamic].push({
+        buffer: audioBuf,
+        note: parsed.note,
+        semitones: semitones,
+        originalName: file.name,
+        fullPath: fullPath
+      });
+      loaded++;
+    } catch (e) {
+      failed++;
+      errors.push(`${file.name}: ${e.message}`);
+    }
+  }
+
+  recomputeSampleStats();
+  return { loaded, unrecog, failed, errors };
+}
+
+function recomputeSampleStats() {
+  let total = 0;
+  state.sampleStats.byInstrument = {};
+  for (const instKey in state.samples) {
+    let instTotal = 0;
+    const byDyn = { pp: 0, p: 0, mp: 0, mf: 0, f: 0, ff: 0 };
+    for (const dyn of DYNAMICS) {
+      const n = state.samples[instKey][dyn].length;
+      byDyn[dyn] = n;
+      instTotal += n;
+    }
+    state.sampleStats.byInstrument[instKey] = { total: instTotal, byDyn };
+    total += instTotal;
+  }
+  state.sampleStats.total = total;
+}
+
+/* -------------------------------------------------------------------------
+   11d. UI DA BIBLIOTECA DE SAMPLES
+   ------------------------------------------------------------------------- */
+function renderSampleLibrary() {
+  const grid = document.getElementById('sample-grid');
+  const meta = document.getElementById('sample-library-meta');
+  const samplesBtn = document.getElementById('mode-samples-btn');
+  const stats = state.sampleStats;
+
+  // Meta resumo
+  if (stats.total === 0) {
+    meta.textContent = 'Nenhum sample carregado · use Tom 1 kHz ou Timbre sintético';
+    samplesBtn.disabled = true;
+    // Se o usuário estava no modo samples e limpou a biblioteca, volta a Timbre
+    if (playMode === 'samples') {
+      playMode = 'orch';
+      document.querySelectorAll('.player-mode-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === 'orch');
+      });
+    }
+  } else {
+    const instCount = Object.values(stats.byInstrument).filter(i => i.total > 0).length;
+    meta.textContent = `${stats.total} samples · ${instCount} instrumento${instCount !== 1 ? 's' : ''}`;
+    samplesBtn.disabled = false;
+  }
+
+  // Grid por instrumento (na ordem das famílias)
+  let html = '';
+  Object.keys(FAMILIES).forEach(famKey => {
+    FAMILIES[famKey].order.forEach(instKey => {
+      const inst = INSTRUMENTS[instKey];
+      const s = stats.byInstrument[instKey] || { total: 0, byDyn: { pp:0,p:0,mp:0,mf:0,f:0,ff:0 } };
+      const rowClass = s.total > 0 ? 'sample-row has-samples' : 'sample-row';
+      let dots = '';
+      DYNAMICS.forEach(d => {
+        const n = s.byDyn[d];
+        const filled = n > 0 ? 'filled' : '';
+        const tip = n > 0 ? `${d}: ${n} sample${n !== 1 ? 's' : ''}` : `${d}: sem samples`;
+        dots += `<span class="sample-dot ${filled}" title="${tip}">${d}</span>`;
+      });
+      html += `
+        <div class="${rowClass}">
+          <span class="sample-row-name">${inst.name}</span>
+          <span class="sample-row-dots">${dots}</span>
+          <span class="sample-row-total">${s.total || '·'}</span>
+        </div>`;
+    });
+  });
+  grid.innerHTML = html;
+
+  renderUnrecognized();
+}
+
+function renderUnrecognized() {
+  const wrap = document.getElementById('sample-unrecognized');
+  const list = document.getElementById('sample-unrecog-list');
+  if (state.unrecognized.length === 0) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+
+  // Constrói options de instrumento ordenados por família
+  let instOpts = '<option value="">— instrumento —</option>';
+  Object.keys(FAMILIES).forEach(famKey => {
+    FAMILIES[famKey].order.forEach(k => {
+      instOpts += `<option value="${k}">${INSTRUMENTS[k].name}</option>`;
+    });
+  });
+  const dynOpts = DYNAMICS.map(d => `<option value="${d}"${d==='mf'?' selected':''}>${d}</option>`).join('');
+
+  list.innerHTML = state.unrecognized.map((item, idx) => `
+    <div class="sample-unrecog-item" data-idx="${idx}">
+      <span class="filename" title="${item.fullPath}">${item.fullPath.length > 50 ? '…' + item.fullPath.slice(-49) : item.fullPath}</span>
+      <select class="map-inst">${instOpts}</select>
+      <select class="map-dyn">${dynOpts}</select>
+      <button class="map-apply">→</button>
+    </div>
+  `).join('');
+
+  // Wire up apply buttons
+  list.querySelectorAll('.map-apply').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const row = e.target.closest('.sample-unrecog-item');
+      const idx = parseInt(row.dataset.idx, 10);
+      const inst = row.querySelector('.map-inst').value;
+      const dyn = row.querySelector('.map-dyn').value;
+      if (!inst) {
+        row.querySelector('.map-inst').style.borderColor = 'rgba(220,100,90,0.8)';
+        return;
+      }
+      const entry = state.unrecognized[idx];
+      try {
+        if (!audioCtx) initAudio();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        const arrBuf = await entry.file.arrayBuffer();
+        const audioBuf = await audioCtx.decodeAudioData(arrBuf);
+        const note = detectNote(entry.file.name) || null;
+        state.samples[inst][dyn].push({
+          buffer: audioBuf, note, semitones: noteToSemitones(note),
+          originalName: entry.file.name, fullPath: entry.fullPath
+        });
+        // Remove desta lista
+        state.unrecognized.splice(idx, 1);
+        recomputeSampleStats();
+        renderSampleLibrary();
+        flashSampleStatus(`Mapeado: ${entry.file.name} → ${INSTRUMENTS[inst].name} (${dyn})`);
+      } catch (err) {
+        flashSampleStatus(`Erro: ${err.message}`, true);
+      }
+    });
+  });
+}
+
+function flashSampleStatus(msg, isError) {
+  const el = document.getElementById('sample-status');
+  el.textContent = msg;
+  el.classList.add('visible');
+  if (isError) el.classList.add('error'); else el.classList.remove('error');
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.remove('visible'), 4500);
+}
+
+// Drag-and-drop com travessia recursiva de pastas (webkitGetAsEntry)
+async function collectFilesFromDataTransfer(dt) {
+  const items = dt.items ? Array.from(dt.items) : [];
+  const files = [];
+  if (items.length && items[0].webkitGetAsEntry) {
+    // Diretórios suportados — caminho recursivo
+    const entries = items.map(i => i.webkitGetAsEntry()).filter(Boolean);
+    for (const entry of entries) {
+      await walkEntry(entry, '', files);
+    }
+  } else {
+    // Fallback: só arquivos planos
+    for (const f of Array.from(dt.files || [])) files.push(f);
+  }
+  return files;
+}
+function walkEntry(entry, prefix, files) {
+  return new Promise((resolve) => {
+    if (entry.isFile) {
+      entry.file(file => {
+        // Anexa o caminho relativo manualmente
+        file.relativePath = prefix + entry.name;
+        files.push(file);
+        resolve();
+      }, () => resolve());
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const allEntries = [];
+      const readBatch = () => {
+        reader.readEntries(async (batch) => {
+          if (!batch.length) {
+            for (const e of allEntries) await walkEntry(e, prefix + entry.name + '/', files);
+            resolve();
+          } else {
+            allEntries.push(...batch);
+            readBatch();
+          }
+        }, () => resolve());
+      };
+      readBatch();
+    } else {
+      resolve();
+    }
+  });
+}
+
+function wireSampleLibrary() {
+  const dropzone = document.getElementById('sample-dropzone');
+  const filesInput = document.getElementById('sample-files-input');
+  const folderInput = document.getElementById('sample-folder-input');
+  const clearBtn = document.getElementById('sample-clear-btn');
+
+  async function handleFiles(files) {
+    if (!files || files.length === 0) return;
+    flashSampleStatus(`Decodificando ${files.length} arquivo${files.length !== 1 ? 's' : ''}…`);
+    const r = await loadSampleFiles(files);
+    let msg = `${r.loaded} carregado${r.loaded !== 1 ? 's' : ''}`;
+    if (r.unrecog) msg += ` · ${r.unrecog} não reconhecido${r.unrecog !== 1 ? 's' : ''}`;
+    if (r.failed) msg += ` · ${r.failed} erro${r.failed !== 1 ? 's' : ''}`;
+    flashSampleStatus(msg, r.failed > 0);
+    renderSampleLibrary();
+  }
+
+  filesInput.addEventListener('change', (e) => handleFiles(e.target.files));
+  folderInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('drag-over');
+  });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    const files = await collectFilesFromDataTransfer(e.dataTransfer);
+    handleFiles(files);
+  });
+  // Também permite drop em qualquer lugar do library panel
+  document.getElementById('sample-library').addEventListener('dragover', (e) => e.preventDefault());
+  document.getElementById('sample-library').addEventListener('drop', async (e) => {
+    if (e.target.closest('.sample-dropzone')) return; // dropzone já tratou
+    e.preventDefault();
+    const files = await collectFilesFromDataTransfer(e.dataTransfer);
+    handleFiles(files);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    if (state.sampleStats.total === 0 && state.unrecognized.length === 0) return;
+    if (!confirm('Limpar toda a biblioteca de samples?')) return;
+    Object.keys(state.samples).forEach(k => {
+      state.samples[k] = { pp: [], p: [], mp: [], mf: [], f: [], ff: [] };
+    });
+    state.unrecognized = [];
+    recomputeSampleStats();
+    renderSampleLibrary();
+    flashSampleStatus('Biblioteca limpa');
+  });
+}
+
+// Dado um instrumento + dinâmica alvo, retorna o melhor sample disponível.
+// Cai para dinâmicas adjacentes quando não há match exato.
+function findBestSample(instKey, targetDyn) {
+  const lib = state.samples[instKey];
+  if (!lib) return null;
+
+  // Pontuação por proximidade dinâmica: 0 = exato, 1 = ±1, etc.
+  const dynIdx = DYNAMICS.indexOf(targetDyn);
+  // Procura na ordem: exato, ±1, ±2, ...
+  const order = [];
+  for (let d = 0; d < DYNAMICS.length; d++) {
+    if (d === 0 && lib[DYNAMICS[dynIdx]]?.length) order.push(dynIdx);
+    if (dynIdx + d < DYNAMICS.length && d > 0) order.push(dynIdx + d);
+    if (dynIdx - d >= 0 && d > 0) order.push(dynIdx - d);
+  }
+  if (order.length === 0) order.push(dynIdx);
+  // Deduplica preservando ordem
+  const seen = new Set();
+  const orderUniq = order.filter(i => !seen.has(i) && seen.add(i));
+
+  for (const i of orderUniq) {
+    const arr = lib[DYNAMICS[i]];
+    if (arr && arr.length) {
+      const pick = arr[Math.floor(Math.random() * arr.length)];
+      return { sample: pick, dynUsed: DYNAMICS[i], dynRequested: targetDyn };
+    }
+  }
+  return null;
+}
+
+/* -------------------------------------------------------------------------
+   12. AUDIO ENGINE · WEB AUDIO API
+   ------------------------------------------------------------------------- */
+let audioCtx = null;
+let masterGain = null;
+let currentSources = [];
+let isPlaying = false;
+let playMode = 'tone'; // 'tone' | 'orch' | 'samples'
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0;
+  masterGain.connect(audioCtx.destination);
+}
+
+function stopAudio() {
+  currentSources.forEach(s => {
+    try { s.stop(); } catch (e) {}
+    try { s.disconnect(); } catch (e) {}
+  });
+  currentSources = [];
+  isPlaying = false;
+  const btn = document.getElementById('play-btn');
+  btn.classList.remove('playing');
+  document.getElementById('play-icon').setAttribute('d', 'M8 5v14l11-7z');
+}
+
+// dB SPL para ganho linear (assumindo referência subjetiva)
+// 100 dB SPL ≡ -10 dBFS (volume confortável)
+function dbToGain(db) {
+  if (!isFinite(db)) return 0;
+  // mapear: 50 dB SPL → -40 dBFS, 100 dB SPL → -10 dBFS, 120 dB SPL → 0 dBFS
+  const dbFS = (db - 100) * 0.3 - 10;
+  return Math.pow(10, dbFS / 20);
+}
+
+function playReference() {
+  initAudio();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  stopAudio();
+
+  const totalDB = computeTotalLevel();
+  if (!isFinite(totalDB) || totalDB < 40) return;
+
+  isPlaying = true;
+  const btn = document.getElementById('play-btn');
+  btn.classList.add('playing');
+  document.getElementById('play-icon').setAttribute('d', 'M6 6h12v12H6z'); // stop icon
+
+  const targetGain = dbToGain(totalDB);
+
+  if (playMode === 'tone') {
+    // tom puro de 1 kHz
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 1000;
+    osc.connect(masterGain);
+    osc.start();
+    currentSources.push(osc);
+  } else if (playMode === 'samples') {
+    // ============ MODO SAMPLES ============
+    // Para cada instrumento com count > 0, busca melhor sample para sua dinâmica
+    // e reproduz com ganho proporcional à contribuição daquele instrumento ao total.
+    // O ganho dos múltiplos performers é codificado no count (+10·log10(n) dB já no
+    // cálculo de famLevel/totalDB), então só precisamos respeitar a proporção logarítmica.
+    let usedAny = false;
+    Object.keys(INSTRUMENTS).forEach(instrKey => {
+      const s = state[instrKey];
+      if (s.count === 0) return;
+
+      const match = findBestSample(instrKey, s.dyn);
+      if (!match) return; // sem samples disponíveis para este instrumento — pula
+      usedAny = true;
+
+      // Nível efetivo deste instrumento (em dB SPL, com o coro de N performers)
+      const instLevel = levelMultiple(INSTRUMENTS[instrKey].levels[s.dyn], s.count);
+      // Ganho relativo ao total: db diff → linear
+      const relGain = Math.pow(10, (instLevel - totalDB) / 20);
+
+      const gain = audioCtx.createGain();
+      gain.gain.value = relGain * 0.6;
+      gain.connect(masterGain);
+
+      // Reproduzir o sample em loop se for curto, ou single-shot se for longo
+      const src = audioCtx.createBufferSource();
+      src.buffer = match.sample.buffer;
+      // Se o sample não bate exatamente na dinâmica pedida, aplica pequena correção
+      // tímbrica via passa-baixa: dinâmicas mais baixas → menos brilho
+      const dynDiff = DYNAMICS.indexOf(s.dyn) - DYNAMICS.indexOf(match.dynUsed);
+      if (dynDiff !== 0) {
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        // Aumenta cutoff se o pedido for mais alto do que o disponível, e vice-versa
+        filter.frequency.value = Math.max(800, 8000 * Math.pow(1.5, dynDiff));
+        src.connect(filter);
+        filter.connect(gain);
+      } else {
+        src.connect(gain);
+      }
+
+      // Loop se sample for menor que 3s (notas curtas em FULLSOL)
+      if (match.sample.buffer.duration < 3) {
+        src.loop = true;
+        // Define ponto de loop entre 20% e 80% para evitar attack e release
+        src.loopStart = match.sample.buffer.duration * 0.2;
+        src.loopEnd = match.sample.buffer.duration * 0.8;
+      }
+      src.start();
+      currentSources.push(src);
+    });
+
+    // Se nenhum instrumento tinha sample, cai pro modo timbre como fallback
+    if (!usedAny) {
+      playFallbackTimbre(totalDB);
+    }
+  } else {
+    // timbre orquestral sintético — mistura de osciladores por naipe
+    playFallbackTimbre(totalDB);
+  }
+
+  // envelope de ataque
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(targetGain, audioCtx.currentTime + 0.1);
+
+  // parar automaticamente após 3.5s
+  setTimeout(() => {
+    if (!isPlaying) return;
+    masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
+    setTimeout(stopAudio, 200);
+  }, 3500);
+}
+
+function playFallbackTimbre(totalDB) {
+  const now = audioCtx.currentTime;
+  Object.keys(FAMILIES).forEach(famKey => {
+    const famLevel = computeFamilyLevel(famKey);
+    if (!isFinite(famLevel) || famLevel < 40) return;
+    const famGainNorm = Math.pow(10, (famLevel - totalDB) / 20);
+    const famGain = audioCtx.createGain();
+    famGain.gain.value = famGainNorm * 0.4;
+    famGain.connect(masterGain);
+
+    FAMILIES[famKey].order.forEach(instrKey => {
+      const s = state[instrKey];
+      if (s.count === 0) return;
+      const inst = INSTRUMENTS[instrKey];
+
+      const fundamentals = inst.freqCenter;
+      let harmonics, weights;
+      if (famKey === 'strings') {
+        harmonics = [1, 2, 3, 4, 5];
+        weights = [1, 0.6, 0.4, 0.3, 0.15];
+      } else if (famKey === 'woods') {
+        harmonics = [1, 2, 3, 4, 5, 6];
+        weights = [1, 0.5, 0.5, 0.3, 0.25, 0.15];
+      } else {
+        harmonics = [1, 2, 3, 4, 5, 6, 7];
+        weights = [0.8, 1, 0.7, 0.6, 0.4, 0.3, 0.2];
+      }
+
+      const instGain = audioCtx.createGain();
+      const countContrib = Math.pow(10, (10 * Math.log10(s.count)) / 20);
+      instGain.gain.value = countContrib / harmonics.length;
+      instGain.connect(famGain);
+
+      harmonics.forEach((h, idx) => {
+        const f = fundamentals * h;
+        if (f > 12000) return;
+        const osc = audioCtx.createOscillator();
+        osc.type = famKey === 'strings' ? 'sawtooth' : (famKey === 'woods' ? 'triangle' : 'square');
+        osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.005);
+        const oscGain = audioCtx.createGain();
+        oscGain.gain.value = weights[idx];
+
+        const lfo = audioCtx.createOscillator();
+        lfo.frequency.value = 4 + Math.random() * 2;
+        const lfoGain = audioCtx.createGain();
+        lfoGain.gain.value = f * 0.003;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        lfo.start();
+
+        osc.connect(oscGain);
+        oscGain.connect(instGain);
+        osc.start();
+        currentSources.push(osc, lfo);
+      });
+    });
+  });
+}
+
+/* -------------------------------------------------------------------------
+   13. UPDATE COMPLETO
+   ------------------------------------------------------------------------- */
+function updateAll() {
+  updateFamilyPanels();
+
+  // contrib bars
+  const totalDB = computeTotalLevel();
+  const maxBar = Math.max(120, totalDB || 0);
+
+  ['strings', 'woods', 'brass'].forEach(fam => {
+    const L = computeFamilyLevel(fam);
+    const bar = document.getElementById(`bar-${fam}`);
+    const val = document.getElementById(`val-${fam}`);
+    if (isFinite(L)) {
+      bar.style.width = `${Math.max(0, (L / maxBar) * 100)}%`;
+      val.textContent = L.toFixed(1);
+    } else {
+      bar.style.width = '0%';
+      val.textContent = '—';
+    }
+  });
+
+  // VU meter
+  updateVUMeter(totalDB);
+
+  // readouts
+  const phon = isFinite(totalDB) ? splToPhon(totalDB, dominantFrequency()) : -Infinity;
+  document.getElementById('readout-spl').textContent = isFinite(totalDB) ? totalDB.toFixed(1) : '—';
+  document.getElementById('readout-phon').textContent = isFinite(phon) && phon > 0 ? phon.toFixed(0) : '—';
+  document.getElementById('readout-count').textContent = totalMusicians();
+
+  // tutti
+  document.getElementById('tutti-spl').textContent = isFinite(totalDB) ? totalDB.toFixed(1) : '—';
+  document.getElementById('tutti-phon').textContent = isFinite(phon) && phon > 0 ? phon.toFixed(0) : '—';
+
+  // comparações
+  document.getElementById('tutti-spl-compare').innerHTML = describeTotalSPL(totalDB);
+  document.getElementById('tutti-phon-compare').innerHTML = describePhon(phon);
+
+  // Fletcher-Munson
+  renderFMCurves();
+  const domF = dominantFrequency();
+  document.getElementById('fm-explainer').innerHTML = describeFM(totalDB, phon, domF);
+  document.getElementById('play-info-db').textContent = isFinite(totalDB) ? totalDB.toFixed(1) + ' dB' : '— dB';
+
+  // palco
+  renderStage();
+}
+
+function describeTotalSPL(db) {
+  if (!isFinite(db)) return 'Configure os naipes para visualizar a comparação.';
+  if (db < 50) return `Silêncio quase total — comparável a uma <em>biblioteca em silêncio</em> (~40 dB).`;
+  if (db < 65) return `Nível de uma <em>conversa calma</em> ou de música ambiente discreta.`;
+  if (db < 80) return `Nível de uma <em>conversa em volume normal</em> (~70 dB).`;
+  if (db < 95) return `Nível típico de uma <em>orquestra em mezzo-forte</em>, ou de tráfego urbano denso.`;
+  if (db < 110) return `Nível de um <em>tutti orquestral em forte</em>, comparável a uma marcha de banda próxima.`;
+  if (db < 120) return `<em>Fortissimo orquestral</em> — Mahler, Wagner. Exposição prolongada já compromete a audição.`;
+  return `Nível extremo de <em>fortissimo possibile</em>. Acima de 120 dB encontra-se o limiar da dor.`;
+}
+
+function describePhon(phon) {
+  if (!isFinite(phon) || phon < 1) return 'A loudness em fones corresponde à intensidade subjetiva igualada a um tom de 1 kHz.';
+  if (phon < 30) return `<em>Quase imperceptível</em> — limiar de audibilidade comum em espaços não tratados acusticamente.`;
+  if (phon < 50) return `Intensidade subjetiva <em>discreta</em>, conforme percebida pela maioria dos ouvintes.`;
+  if (phon < 70) return `Intensidade subjetiva <em>moderada</em> — diálogo claro, música de fundo audível.`;
+  if (phon < 90) return `Intensidade subjetiva <em>significativa</em> — música ao vivo em sala média.`;
+  if (phon < 105) return `Intensidade subjetiva <em>intensa</em> — clímax sinfônico, atenção plena.`;
+  return `Intensidade subjetiva <em>esmagadora</em> — risco de fadiga auditiva sustentada.`;
+}
+
+function describeFM(spl, phon, freq) {
+  if (!isFinite(spl)) {
+    return 'Configure os naipes para visualizar como a intensidade física se relaciona com a percepção auditiva.';
+  }
+  const splStr = `<strong>${spl.toFixed(1)} dB SPL</strong>`;
+  const phonStr = isFinite(phon) && phon > 0 ? `<strong>${phon.toFixed(0)} fones</strong>` : '<strong>—</strong>';
+  const freqStr = freq < 1000 ? `${Math.round(freq)} Hz` : `${(freq / 1000).toFixed(2)} kHz`;
+  const diff = isFinite(phon) ? phon - spl : 0;
+  let comment = '';
+  if (Math.abs(diff) < 3) {
+    comment = ` Como o conteúdo espectral concentra-se próximo de 1 kHz, a percepção alinha-se diretamente com o nível físico.`;
+  } else if (diff < 0) {
+    comment = ` O conteúdo predominante (${freqStr}) cai numa região <em>menos sensível</em> do ouvido — a percepção é ${Math.abs(diff).toFixed(0)} dB inferior ao nível físico.`;
+  } else {
+    comment = ` O conteúdo predominante (${freqStr}) cai numa região de <em>sensibilidade alta</em> — a percepção é ${diff.toFixed(0)} dB superior ao nível físico.`;
+  }
+  return `A intensidade física total da orquestra é ${splStr}. No entanto, dependendo da frequência predominante do conteúdo musical (${freqStr}), o ouvido percebe esse mesmo nível físico como ${phonStr}.${comment}`;
+}
+
+/* -------------------------------------------------------------------------
+   14. INICIALIZAÇÃO
+   ------------------------------------------------------------------------- */
+function init() {
+  renderFamilies();
+  renderVUMeter();
+  renderPresets();
+  renderFMCurves();
+  updateAll();
+
+  // Player
+  document.getElementById('play-btn').addEventListener('click', () => {
+    if (isPlaying) stopAudio();
+    else playReference();
+  });
+
+  // Modos de player
+  document.querySelectorAll('.player-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      document.querySelectorAll('.player-mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      playMode = btn.dataset.mode;
+      if (isPlaying) {
+        stopAudio();
+        setTimeout(playReference, 100);
+      }
+    });
+  });
+
+  // Biblioteca de samples
+  wireSampleLibrary();
+  renderSampleLibrary();
+
+  // Aplicar preset inicial
+  applyPreset('meyer49');
+
+  // Re-render FM curves on resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      renderFMCurves();
+    }, 200);
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+</script>
+
+</body>
+</html>

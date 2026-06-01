@@ -1,0 +1,51 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.settings/
+
+# Logs e dumps
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Diretórios não usados (mas pessoas costumam adicionar)
+node_modules/
+dist/
+build/
+out/
+
+# Samples locais (não distribuídos no repositório por questões de licença)
+samples/
+*.wav
+*.aif
+*.aiff
+*.mp3
+*.ogg
+*.flac
+
+# Backups
+*.bak
+*.orig
+*.tmp
