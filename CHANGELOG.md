@@ -6,6 +6,59 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.2.0] — 2026-06-02
+
+### Adicionado
+
+- **Nova seção VI: Blocos de Acordes** — atelier de orquestração para criar até 5
+  configurações orquestrais independentes e comparar suas características sonoras
+  lado a lado:
+  - Cada bloco tem **vozes independentes** com instrumento, altura (pitch), quantidade
+    e dinâmica próprias.
+  - **Piano-roll SVG compacto** por bloco mostrando as vozes em sua altura real,
+    com cores por família e tamanhos proporcionais ao número de músicos.
+  - **Métricas por bloco**: SPL total, loudness em fones (calculada com a frequência
+    dominante real do bloco), frequência dominante, balanço por naipe.
+  - **Playback individual** de cada bloco com até 3,5 s de duração.
+  - **Numeração romana editorial** (I, II, III, IV, V) e label editável por bloco.
+- **Demonstração pedagógica central**: o mesmo conjunto de instrumentos em registros
+  graves vs. agudos produz o mesmo dB SPL mas valores de fones diferentes,
+  evidenciando a sensibilidade variável do ouvido pela curva isofônica.
+- **Playback inteligente das vozes** — quando há samples na biblioteca, usa o sample
+  mais próximo do instrumento/dinâmica solicitados com **pitch-shift** via
+  `playbackRate` para a nota correta da voz (limitado a ±12 semitons para evitar
+  artefatos extremos; cai para síntese fora desse range).
+
+### Melhorado
+
+- **Loader de samples paralelizado** — processa em lotes de 8 arquivos em paralelo,
+  trazendo carregamento de bibliotecas grandes (FULLSOL ≈ milhares de arquivos)
+  de minutos para segundos.
+- **Progresso ao vivo** durante o carregamento — barra de status persistente
+  mostrando `Decodificando X/Y (Z%) · ✓ N carregados · ? N não reconhecidos`.
+- **Painel de diagnóstico** expansível mostrando os primeiros arquivos reconhecidos,
+  não reconhecidos e erros de decodificação — útil quando o usuário vê "0 carregados"
+  e precisa entender o porquê.
+- **Mensagem final persistente** — status não some sozinho durante uploads longos
+  (antes desaparecia em 4,5s mesmo se o processamento ainda estivesse em curso).
+- **Compatibilidade com `decodeAudioData` callback-style** (Safari antigo) e
+  Promise-style (Chrome/Firefox).
+- **Limitação de exibição** a 50 arquivos não reconhecidos com contador "+ N restantes"
+  para evitar travamento da UI quando há milhares de arquivos.
+- **Error handling robusto** — todos os event handlers async têm `.catch()` que
+  reporta erros visíveis via flashSampleStatus em vez de falhar silenciosamente.
+- **Renumeração de seções**: Documentação Pedagógica passou de VI para VII para
+  acomodar a nova seção Blocos.
+
+### Corrigido
+
+- Status de carregamento que sumia em 4,5 s mesmo durante uploads longos, fazendo
+  parecer que o app travou após confirmar o pop-up de seleção de pasta.
+- Loop serial `await` arquivo-por-arquivo que tornava o load de pastas grandes
+  inviável na prática.
+
+---
+
 ## [1.1.0] — 2026-06-01
 
 ### Adicionado

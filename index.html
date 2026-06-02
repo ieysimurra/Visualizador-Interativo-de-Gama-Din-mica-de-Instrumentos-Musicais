@@ -1030,6 +1030,63 @@ a:hover { border-color: var(--varnish); }
 .sample-status.visible { opacity: 0.85; }
 .sample-status.error { color: rgba(220, 100, 90, 0.9); }
 
+.sample-diagnostic {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: rgba(20, 14, 8, 0.55);
+  border: 1px solid rgba(232, 184, 95, 0.18);
+  border-radius: 5px;
+  font-family: 'EB Garamond', serif;
+  font-size: 12.5px;
+}
+.diag-summary {
+  margin-bottom: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.3px;
+  opacity: 0.9;
+}
+.diag-summary .diag-ok { color: #9bd17a; }
+.diag-summary .diag-warn { color: #d8b766; }
+.diag-summary .diag-err { color: rgba(220, 100, 90, 0.95); }
+.diag-block {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.diag-block summary {
+  cursor: pointer;
+  font-style: italic;
+  opacity: 0.85;
+  padding: 3px 0;
+  user-select: none;
+}
+.diag-block summary:hover { opacity: 1; color: var(--brass-glow); }
+.diag-list {
+  margin: 4px 0 0 18px;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.diag-list li {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  list-style: '· ';
+  padding: 2px 0;
+  line-height: 1.4;
+  word-break: break-all;
+}
+.diag-list code {
+  color: var(--paper);
+  opacity: 0.8;
+}
+.diag-list em {
+  color: var(--brass-glow);
+  font-style: normal;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 12.5px;
+}
+.diag-list-err li { color: rgba(220, 100, 90, 0.85); }
+
 .sample-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
@@ -1140,6 +1197,16 @@ a:hover { border-color: var(--varnish); }
   font-family: inherit;
   font-size: 10.5px;
   cursor: pointer;
+}
+.sample-unrecog-more {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 11.5px;
+  opacity: 0.65;
+  text-align: center;
+  padding: 6px 0 2px;
+  border-top: 1px dashed rgba(232, 184, 95, 0.18);
+  margin-top: 6px;
 }
 
 /* ============================
@@ -1395,6 +1462,272 @@ a:hover { border-color: var(--varnish); }
 .row-zero .spl-readout,
 .row-zero .dynamic-select { opacity: 0.4; }
 
+/* ============================
+   SECTION BLOCOS DE ACORDES
+   ============================ */
+.blocks-intro {
+  font-family: 'EB Garamond', serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin-bottom: 24px;
+  max-width: 880px;
+}
+.blocks-intro em {
+  color: var(--varnish);
+  font-style: italic;
+}
+
+.blocks-container {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.block-card {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 22px;
+  padding: 20px 22px;
+  background: var(--paper-light);
+  border: 1px solid var(--paper-rule);
+  border-left: 3px solid var(--brass);
+  border-radius: 4px;
+  position: relative;
+  box-shadow: 0 2px 6px var(--shadow);
+}
+.block-card.empty {
+  grid-template-columns: 1fr;
+  text-align: center;
+  font-style: italic;
+  color: var(--ink-muted);
+  padding: 32px 24px;
+  border-left-color: var(--paper-rule);
+  background: transparent;
+  border-style: dashed;
+}
+
+.block-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--paper-rule);
+}
+.block-roman {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--varnish);
+  letter-spacing: 1px;
+  line-height: 1;
+  min-width: 42px;
+}
+.block-label-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-style: italic;
+  color: var(--ink);
+  padding: 2px 4px;
+  border-radius: 3px;
+  border-bottom: 1px dashed transparent;
+}
+.block-label-input:hover, .block-label-input:focus {
+  border-bottom-color: var(--brass);
+  outline: none;
+}
+.block-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.block-play-btn, .block-remove-btn {
+  background: transparent;
+  color: var(--varnish);
+  border: 1px solid var(--brass);
+  border-radius: 3px;
+  padding: 5px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.block-play-btn:hover { background: var(--brass); color: var(--paper); }
+.block-play-btn.playing { background: var(--varnish); color: var(--paper); border-color: var(--varnish); }
+.block-remove-btn {
+  color: var(--varnish-deep);
+  border-color: rgba(74, 24, 8, 0.4);
+}
+.block-remove-btn:hover { background: var(--varnish); color: var(--paper); border-color: var(--varnish); }
+
+.block-piano-roll {
+  background: var(--ink);
+  border-radius: 4px;
+  padding: 10px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.block-piano-roll svg {
+  width: 100%;
+  height: 180px;
+  display: block;
+}
+.block-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--paper);
+  opacity: 0.85;
+  padding-top: 6px;
+  border-top: 1px solid rgba(232, 184, 95, 0.18);
+}
+.block-metric-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.block-metric-row .label { opacity: 0.6; }
+.block-metric-row .val {
+  color: var(--brass-glow);
+  font-weight: 600;
+}
+.block-metric-spl {
+  font-size: 22px;
+  font-family: 'Cormorant Garamond', serif;
+  color: var(--brass-glow);
+  letter-spacing: 0.5px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.block-voices {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.block-voices-header {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--ink-muted);
+  margin-bottom: 2px;
+  display: grid;
+  grid-template-columns: 1.5fr 0.9fr 0.5fr 0.7fr 24px;
+  gap: 6px;
+  padding: 0 6px;
+}
+.block-voice {
+  display: grid;
+  grid-template-columns: 1.5fr 0.9fr 0.5fr 0.7fr 24px;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 6px;
+  background: var(--paper-deep);
+  border: 1px solid var(--paper-rule);
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+}
+.block-voice.strings { border-left-color: var(--strings); }
+.block-voice.woods { border-left-color: var(--woods); }
+.block-voice.brass { border-left-color: var(--brass-section); }
+
+.block-voice select, .block-voice input {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--paper-rule);
+  border-radius: 3px;
+  padding: 5px 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.block-voice select:focus, .block-voice input:focus {
+  outline: none;
+  border-color: var(--brass);
+}
+.block-voice input[type="number"] { width: 100%; }
+.block-voice .voice-remove {
+  background: transparent;
+  color: var(--ink-muted);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px;
+}
+.block-voice .voice-remove:hover { color: var(--varnish); border-color: rgba(107, 38, 21, 0.3); }
+
+.block-add-voice {
+  align-self: flex-start;
+  background: transparent;
+  color: var(--varnish);
+  border: 1px dashed rgba(107, 38, 21, 0.35);
+  border-radius: 3px;
+  padding: 5px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.block-add-voice:hover { background: rgba(107, 38, 21, 0.06); border-style: solid; }
+
+.block-body { display: flex; flex-direction: column; }
+.block-empty-voices {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--ink-muted);
+  padding: 14px 6px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.blocks-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+}
+.block-add-btn {
+  background: var(--varnish);
+  color: var(--paper);
+  border: none;
+  border-radius: 4px;
+  padding: 9px 18px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.block-add-btn:hover { background: var(--varnish-deep); }
+.block-add-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.blocks-limit {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 760px) {
+  .block-card { grid-template-columns: 1fr; }
+  .block-piano-roll { min-height: 160px; }
+  .block-voices-header { display: none; }
+  .block-voice { grid-template-columns: 1fr 1fr 1fr 1fr 28px; }
+}
+
 /* Tooltip simples */
 [data-tip] { position: relative; cursor: help; }
 [data-tip]:hover::after {
@@ -1586,6 +1919,7 @@ a:hover { border-color: var(--varnish); }
             <span class="sample-dropzone-sub">FULLSOL · Philharmonia · Iowa MIS · VSL · genérico</span>
           </div>
           <div class="sample-status" id="sample-status"></div>
+          <div class="sample-diagnostic" id="sample-diagnostic" hidden></div>
           <div class="sample-grid" id="sample-grid"></div>
           <div class="sample-unrecognized" id="sample-unrecognized" hidden>
             <div class="sample-unrecog-header">Arquivos não reconhecidos · mapeie manualmente</div>
@@ -1671,11 +2005,41 @@ a:hover { border-color: var(--varnish); }
 </section>
 
 <!-- ============================================
-     VI · DOCUMENTAÇÃO PEDAGÓGICA
+     VI · BLOCOS DE ACORDES · COMPARAÇÃO DE GAMA DINÂMICA
+     ============================================ -->
+<section class="section" id="blocks">
+  <div class="section-header">
+    <div class="section-num">VI</div>
+    <div class="section-title">
+      <div class="kicker">Atelier de Orquestração · Comparação Sonora</div>
+      <h2>Blocos de <em>acordes</em></h2>
+    </div>
+  </div>
+
+  <div class="blocks-intro">
+    Construa até cinco configurações orquestrais distintas — cada bloco é um acorde
+    independente, com instrumentos, alturas (<em>pitches</em>), quantidades e dinâmicas
+    próprias. Compare lado a lado o nível resultante, o ponto na curva isofônica e o
+    balanço entre naipes. Útil para investigar como diferentes <em>orquestrações</em> de
+    um mesmo acorde produzem sensações de intensidade distintas.
+  </div>
+
+  <div class="blocks-container" id="blocks-container">
+    <!-- Populado por JavaScript -->
+  </div>
+
+  <div class="blocks-footer">
+    <button class="block-add-btn" id="block-add-btn">+ Adicionar bloco</button>
+    <span class="blocks-limit">máximo 5 blocos</span>
+  </div>
+</section>
+
+<!-- ============================================
+     VII · DOCUMENTAÇÃO PEDAGÓGICA
      ============================================ -->
 <section class="section" id="docs">
   <div class="section-header">
-    <div class="section-num">VI</div>
+    <div class="section-num">VII</div>
     <div class="section-title">
       <div class="kicker">Material Didático · Acústica Musical</div>
       <h2>Documentação <em>pedagógica</em></h2>
@@ -1968,6 +2332,96 @@ Object.keys(INSTRUMENTS).forEach(key => {
 });
 state.unrecognized = [];
 state.sampleStats = { total: 0, byInstrument: {} };
+
+/* Blocos de acordes para comparação de gama dinâmica */
+state.blocks = [];          // [{ id, label, voices: [{ inst, note, count, dyn }] }]
+state.blockIdCounter = 0;
+state.blockPlayingId = null;
+state.blockPlayingSources = [];
+
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const PITCH_RANGE_MIN = 24;   // C1
+const PITCH_RANGE_MAX = 96;   // C7
+const PITCH_LIST = (() => {
+  const arr = [];
+  for (let m = PITCH_RANGE_MIN; m <= PITCH_RANGE_MAX; m++) {
+    const oct = Math.floor(m / 12) - 1;
+    arr.push({ midi: m, name: NOTE_NAMES[m % 12] + oct });
+  }
+  return arr;
+})();
+
+function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+function noteToMidi(note) {
+  if (!note) return null;
+  const m = note.match(/^([A-G])([#b]?)(-?[0-9])$/);
+  if (!m) return null;
+  const base = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 }[m[1]];
+  const acc = m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0;
+  return (parseInt(m[3], 10) + 1) * 12 + base + acc;
+}
+function noteToFreq(note) {
+  const midi = noteToMidi(note);
+  return midi === null ? 440 : midiToFreq(midi);
+}
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+const MAX_BLOCKS = 5;
+
+function blockFamilyOf(instKey) {
+  for (const fam in FAMILIES) {
+    if (FAMILIES[fam].order.includes(instKey)) return fam;
+  }
+  return null;
+}
+
+// Nível SPL total de um bloco — soma logarítmica das vozes
+function blockSPL(block) {
+  if (!block.voices.length) return -Infinity;
+  const contribs = block.voices
+    .filter(v => v.count > 0 && INSTRUMENTS[v.inst])
+    .map(v => {
+      const L1 = INSTRUMENTS[v.inst].levels[v.dyn];
+      return levelMultiple(L1, v.count);
+    });
+  if (!contribs.length) return -Infinity;
+  return sumDB(contribs);
+}
+
+// Frequência dominante (ponderada por intensidade) — para localizar o ponto na curva FM
+function blockDominantFreq(block) {
+  let totalI = 0, weightedF = 0;
+  block.voices.forEach(v => {
+    if (v.count === 0 || !INSTRUMENTS[v.inst]) return;
+    const L = INSTRUMENTS[v.inst].levels[v.dyn] + 10 * Math.log10(v.count);
+    const I = Math.pow(10, L / 10);
+    totalI += I;
+    weightedF += I * noteToFreq(v.note);
+  });
+  return totalI > 0 ? weightedF / totalI : 1000;
+}
+
+function blockPhon(block) {
+  const spl = blockSPL(block);
+  if (!isFinite(spl)) return -Infinity;
+  return splToPhon(spl, blockDominantFreq(block));
+}
+
+function blockBalance(block) {
+  // Retorna [strings_dB, woods_dB, brass_dB]
+  const fam = { strings: [], woods: [], brass: [] };
+  block.voices.forEach(v => {
+    if (v.count === 0 || !INSTRUMENTS[v.inst]) return;
+    const f = blockFamilyOf(v.inst);
+    if (!f) return;
+    fam[f].push(INSTRUMENTS[v.inst].levels[v.dyn] + 10 * Math.log10(v.count));
+  });
+  return {
+    strings: fam.strings.length ? sumDB(fam.strings) : -Infinity,
+    woods: fam.woods.length ? sumDB(fam.woods) : -Infinity,
+    brass: fam.brass.length ? sumDB(fam.brass) : -Infinity
+  };
+}
 
 /* -------------------------------------------------------------------------
    4.  CÁLCULOS ACÚSTICOS
@@ -2788,29 +3242,58 @@ function parseSampleFile(filename, fullPath) {
 
 /* -------------------------------------------------------------------------
    11c. LOADER DE SAMPLES · drag-drop + folder + manual
-   ------------------------------------------------------------------------- */
-async function loadSampleFiles(files) {
+   -------------------------------------------------------------------------
+   Processa em lotes paralelos para acelerar drasticamente o load de
+   bibliotecas grandes (FULLSOL = milhares de arquivos). Reporta progresso
+   via callback para a UI atualizar em tempo real.
+   ----------------------------------------------------------------------- */
+async function loadSampleFiles(files, onProgress) {
   if (!audioCtx) initAudio();
-  if (audioCtx.state === 'suspended') await audioCtx.resume();
+  // Em alguns navegadores, audioCtx.resume() falha silenciosamente fora de
+  // user gesture. Tentamos e seguimos — decodeAudioData ainda funciona em
+  // contexto suspended desde que tenha havido user gesture (clique no botão).
+  if (audioCtx.state === 'suspended') {
+    try { await audioCtx.resume(); } catch (e) { /* ignora */ }
+  }
 
+  // Pré-filtra arquivos com extensão de áudio
+  const audioFiles = [];
+  for (const file of files) {
+    if (/\.(wav|aiff?|mp3|ogg|flac|m4a|webm|opus)$/i.test(file.name)) {
+      audioFiles.push(file);
+    }
+  }
+
+  const skipped = files.length - audioFiles.length;
+  const total = audioFiles.length;
   let loaded = 0, unrecog = 0, failed = 0;
   const errors = [];
+  const parsedExamples = []; // primeiros 10 parses bem-sucedidos para diagnóstico
+  const unrecogExamples = []; // primeiros 10 não reconhecidos para diagnóstico
+  let processed = 0;
 
-  for (const file of files) {
+  // Função que processa UM arquivo
+  async function processOne(file) {
     const fullPath = file.webkitRelativePath || file.relativePath || file.name;
-    // Aceita só áudio
-    if (!/\.(wav|aif{1,2}|aiff|mp3|ogg|flac|m4a|webm)$/i.test(file.name)) continue;
-
     const parsed = parseSampleFile(file.name, fullPath);
+
     if (!parsed.inst) {
       state.unrecognized.push({ file, parsed, fullPath });
       unrecog++;
-      continue;
+      if (unrecogExamples.length < 10) {
+        unrecogExamples.push({ name: file.name, path: fullPath });
+      }
+      return;
     }
 
     try {
       const arrBuf = await file.arrayBuffer();
-      const audioBuf = await audioCtx.decodeAudioData(arrBuf);
+      // decodeAudioData pode receber callbacks ou retornar Promise.
+      // O cast para Promise garante compatibilidade.
+      const audioBuf = await new Promise((resolve, reject) => {
+        const r = audioCtx.decodeAudioData(arrBuf, resolve, reject);
+        if (r && typeof r.then === 'function') r.then(resolve, reject);
+      });
       const semitones = noteToSemitones(parsed.note);
       state.samples[parsed.inst][parsed.dynamic].push({
         buffer: audioBuf,
@@ -2820,14 +3303,33 @@ async function loadSampleFiles(files) {
         fullPath: fullPath
       });
       loaded++;
+      if (parsedExamples.length < 10) {
+        parsedExamples.push({
+          name: file.name, inst: parsed.inst,
+          note: parsed.note, dyn: parsed.dynamic
+        });
+      }
     } catch (e) {
       failed++;
-      errors.push(`${file.name}: ${e.message}`);
+      if (errors.length < 20) errors.push(`${file.name}: ${e.message || e}`);
     }
   }
 
+  // Processa em lotes paralelos — 8 arquivos por vez é um bom trade-off
+  // entre velocidade e consumo de memória.
+  const BATCH = 8;
+  for (let i = 0; i < audioFiles.length; i += BATCH) {
+    const slice = audioFiles.slice(i, i + BATCH);
+    await Promise.all(slice.map(f => processOne(f).catch(e => {
+      failed++;
+      if (errors.length < 20) errors.push(`${f.name}: ${e.message || e}`);
+    })));
+    processed += slice.length;
+    if (onProgress) onProgress({ processed, total, loaded, unrecog, failed });
+  }
+
   recomputeSampleStats();
-  return { loaded, unrecog, failed, errors };
+  return { loaded, unrecog, failed, skipped, errors, parsedExamples, unrecogExamples, total };
 }
 
 function recomputeSampleStats() {
@@ -2909,7 +3411,6 @@ function renderUnrecognized() {
   }
   wrap.hidden = false;
 
-  // Constrói options de instrumento ordenados por família
   let instOpts = '<option value="">— instrumento —</option>';
   Object.keys(FAMILIES).forEach(famKey => {
     FAMILIES[famKey].order.forEach(k => {
@@ -2918,7 +3419,19 @@ function renderUnrecognized() {
   });
   const dynOpts = DYNAMICS.map(d => `<option value="${d}"${d==='mf'?' selected':''}>${d}</option>`).join('');
 
-  list.innerHTML = state.unrecognized.map((item, idx) => `
+  // Limita exibição a 50 itens — biblioteca pode ter milhares
+  const MAX_SHOW = 50;
+  const total = state.unrecognized.length;
+  const shown = Math.min(total, MAX_SHOW);
+  const hidden = total - shown;
+
+  // Atualiza header
+  const header = wrap.querySelector('.sample-unrecog-header');
+  let headerText = `Arquivos não reconhecidos · mapeie manualmente · ${total} total`;
+  if (hidden > 0) headerText += ` · exibindo primeiros ${shown}`;
+  header.textContent = headerText;
+
+  let html = state.unrecognized.slice(0, MAX_SHOW).map((item, idx) => `
     <div class="sample-unrecog-item" data-idx="${idx}">
       <span class="filename" title="${item.fullPath}">${item.fullPath.length > 50 ? '…' + item.fullPath.slice(-49) : item.fullPath}</span>
       <select class="map-inst">${instOpts}</select>
@@ -2926,8 +3439,11 @@ function renderUnrecognized() {
       <button class="map-apply">→</button>
     </div>
   `).join('');
+  if (hidden > 0) {
+    html += `<div class="sample-unrecog-more">+ ${hidden} arquivos não exibidos · mapeie estes 50 primeiro</div>`;
+  }
+  list.innerHTML = html;
 
-  // Wire up apply buttons
   list.querySelectorAll('.map-apply').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const row = e.target.closest('.sample-unrecog-item');
@@ -2943,13 +3459,15 @@ function renderUnrecognized() {
         if (!audioCtx) initAudio();
         if (audioCtx.state === 'suspended') await audioCtx.resume();
         const arrBuf = await entry.file.arrayBuffer();
-        const audioBuf = await audioCtx.decodeAudioData(arrBuf);
+        const audioBuf = await new Promise((resolve, reject) => {
+          const r = audioCtx.decodeAudioData(arrBuf, resolve, reject);
+          if (r && typeof r.then === 'function') r.then(resolve, reject);
+        });
         const note = detectNote(entry.file.name) || null;
         state.samples[inst][dyn].push({
           buffer: audioBuf, note, semitones: noteToSemitones(note),
           originalName: entry.file.name, fullPath: entry.fullPath
         });
-        // Remove desta lista
         state.unrecognized.splice(idx, 1);
         recomputeSampleStats();
         renderSampleLibrary();
@@ -2961,13 +3479,77 @@ function renderUnrecognized() {
   });
 }
 
-function flashSampleStatus(msg, isError) {
+function flashSampleStatus(msg, isError, persistent) {
   const el = document.getElementById('sample-status');
   el.textContent = msg;
   el.classList.add('visible');
   if (isError) el.classList.add('error'); else el.classList.remove('error');
   clearTimeout(el._timer);
-  el._timer = setTimeout(() => el.classList.remove('visible'), 4500);
+  if (!persistent) {
+    el._timer = setTimeout(() => el.classList.remove('visible'), 6000);
+  }
+}
+
+function setSampleProgress(processed, total, loaded, unrecog, failed) {
+  const el = document.getElementById('sample-status');
+  const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+  const parts = [`Decodificando ${processed}/${total} (${pct}%)`];
+  if (loaded > 0) parts.push(`✓ ${loaded}`);
+  if (unrecog > 0) parts.push(`? ${unrecog}`);
+  if (failed > 0) parts.push(`✗ ${failed}`);
+  el.textContent = parts.join(' · ');
+  el.classList.add('visible');
+  el.classList.remove('error');
+  clearTimeout(el._timer);
+}
+
+// Renderiza um painel de diagnóstico abaixo do status mostrando o que o parser
+// fez com os primeiros arquivos. Útil quando o usuário vê "0 carregados".
+function renderSampleDiagnostic(result) {
+  const wrap = document.getElementById('sample-diagnostic');
+  if (!wrap) return;
+  const total = result.loaded + result.unrecog + result.failed;
+  if (total === 0 && result.skipped === 0) {
+    wrap.hidden = true;
+    return;
+  }
+
+  let html = `<div class="diag-summary">`;
+  html += `<strong>Diagnóstico</strong> · `;
+  html += `total: ${result.total} arquivo${result.total !== 1 ? 's' : ''} de áudio`;
+  if (result.skipped > 0) html += ` · ignorados (não-áudio): ${result.skipped}`;
+  html += ` · <span class="diag-ok">carregados: ${result.loaded}</span>`;
+  if (result.unrecog > 0) html += ` · <span class="diag-warn">não reconhecidos: ${result.unrecog}</span>`;
+  if (result.failed > 0) html += ` · <span class="diag-err">erros: ${result.failed}</span>`;
+  html += `</div>`;
+
+  if (result.parsedExamples.length > 0) {
+    html += `<details class="diag-block"><summary>Primeiros ${result.parsedExamples.length} reconhecidos</summary>`;
+    html += `<ul class="diag-list">`;
+    result.parsedExamples.forEach(p => {
+      html += `<li><code>${p.name}</code> → <em>${INSTRUMENTS[p.inst].name}</em> · ${p.note || '(sem nota)'} · ${p.dyn}</li>`;
+    });
+    html += `</ul></details>`;
+  }
+  if (result.unrecogExamples.length > 0) {
+    html += `<details class="diag-block"><summary>Primeiros ${result.unrecogExamples.length} não reconhecidos · use o painel de mapeamento manual abaixo</summary>`;
+    html += `<ul class="diag-list">`;
+    result.unrecogExamples.forEach(p => {
+      html += `<li><code>${p.path}</code></li>`;
+    });
+    html += `</ul></details>`;
+  }
+  if (result.errors.length > 0) {
+    html += `<details class="diag-block"><summary>Primeiros ${result.errors.length} erros de decodificação</summary>`;
+    html += `<ul class="diag-list diag-list-err">`;
+    result.errors.forEach(e => {
+      html += `<li>${e}</li>`;
+    });
+    html += `</ul></details>`;
+  }
+
+  wrap.innerHTML = html;
+  wrap.hidden = false;
 }
 
 // Drag-and-drop com travessia recursiva de pastas (webkitGetAsEntry)
@@ -3024,17 +3606,33 @@ function wireSampleLibrary() {
 
   async function handleFiles(files) {
     if (!files || files.length === 0) return;
-    flashSampleStatus(`Decodificando ${files.length} arquivo${files.length !== 1 ? 's' : ''}…`);
-    const r = await loadSampleFiles(files);
-    let msg = `${r.loaded} carregado${r.loaded !== 1 ? 's' : ''}`;
-    if (r.unrecog) msg += ` · ${r.unrecog} não reconhecido${r.unrecog !== 1 ? 's' : ''}`;
-    if (r.failed) msg += ` · ${r.failed} erro${r.failed !== 1 ? 's' : ''}`;
-    flashSampleStatus(msg, r.failed > 0);
-    renderSampleLibrary();
+    const total = files.length || (files.size !== undefined ? files.size : 0);
+    flashSampleStatus(`Preparando ${total} arquivo${total !== 1 ? 's' : ''}…`, false, true);
+
+    try {
+      const r = await loadSampleFiles(files, (p) => {
+        setSampleProgress(p.processed, p.total, p.loaded, p.unrecog, p.failed);
+      });
+      // Mensagem final persistente (não some sozinha)
+      let msg = `Concluído · ${r.loaded} carregado${r.loaded !== 1 ? 's' : ''}`;
+      if (r.unrecog) msg += ` · ${r.unrecog} não reconhecido${r.unrecog !== 1 ? 's' : ''}`;
+      if (r.failed)  msg += ` · ${r.failed} erro${r.failed !== 1 ? 's' : ''}`;
+      if (r.skipped) msg += ` · ${r.skipped} ignorado${r.skipped !== 1 ? 's' : ''} (não-áudio)`;
+      flashSampleStatus(msg, r.failed > 0 && r.loaded === 0, true);
+      renderSampleDiagnostic(r);
+      renderSampleLibrary();
+    } catch (err) {
+      console.error('[samples] erro inesperado:', err);
+      flashSampleStatus(`Erro inesperado: ${err.message || err}`, true, true);
+    }
   }
 
-  filesInput.addEventListener('change', (e) => handleFiles(e.target.files));
-  folderInput.addEventListener('change', (e) => handleFiles(e.target.files));
+  filesInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files).finally(() => { e.target.value = ''; });
+  });
+  folderInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files).finally(() => { e.target.value = ''; });
+  });
 
   dropzone.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -3044,16 +3642,25 @@ function wireSampleLibrary() {
   dropzone.addEventListener('drop', async (e) => {
     e.preventDefault();
     dropzone.classList.remove('drag-over');
-    const files = await collectFilesFromDataTransfer(e.dataTransfer);
-    handleFiles(files);
+    try {
+      const files = await collectFilesFromDataTransfer(e.dataTransfer);
+      handleFiles(files);
+    } catch (err) {
+      console.error('[samples] drop error:', err);
+      flashSampleStatus(`Erro ao ler drop: ${err.message || err}`, true, true);
+    }
   });
-  // Também permite drop em qualquer lugar do library panel
+
   document.getElementById('sample-library').addEventListener('dragover', (e) => e.preventDefault());
   document.getElementById('sample-library').addEventListener('drop', async (e) => {
-    if (e.target.closest('.sample-dropzone')) return; // dropzone já tratou
+    if (e.target.closest('.sample-dropzone')) return;
     e.preventDefault();
-    const files = await collectFilesFromDataTransfer(e.dataTransfer);
-    handleFiles(files);
+    try {
+      const files = await collectFilesFromDataTransfer(e.dataTransfer);
+      handleFiles(files);
+    } catch (err) {
+      console.error('[samples] drop error:', err);
+    }
   });
 
   clearBtn.addEventListener('click', () => {
@@ -3065,6 +3672,8 @@ function wireSampleLibrary() {
     state.unrecognized = [];
     recomputeSampleStats();
     renderSampleLibrary();
+    const diag = document.getElementById('sample-diagnostic');
+    if (diag) diag.hidden = true;
     flashSampleStatus('Biblioteca limpa');
   });
 }
@@ -3294,6 +3903,457 @@ function playFallbackTimbre(totalDB) {
 }
 
 /* -------------------------------------------------------------------------
+   12c. RENDERIZAÇÃO DOS BLOCOS DE ACORDES
+   ------------------------------------------------------------------------- */
+
+function instrumentOptionsHTML(selectedKey) {
+  let html = '<option value="">— instrumento —</option>';
+  Object.keys(FAMILIES).forEach(famKey => {
+    html += `<optgroup label="${FAMILIES[famKey].label}">`;
+    FAMILIES[famKey].order.forEach(k => {
+      const sel = k === selectedKey ? ' selected' : '';
+      html += `<option value="${k}"${sel}>${INSTRUMENTS[k].name}</option>`;
+    });
+    html += `</optgroup>`;
+  });
+  return html;
+}
+
+function pitchOptionsHTML(selectedNote) {
+  return PITCH_LIST.map(p => {
+    const sel = p.name === selectedNote ? ' selected' : '';
+    return `<option value="${p.name}"${sel}>${p.name}</option>`;
+  }).join('');
+}
+
+function dynamicOptionsHTML(selectedDyn) {
+  return DYNAMICS.map(d => {
+    const sel = d === selectedDyn ? ' selected' : '';
+    return `<option value="${d}"${sel}>${d}</option>`;
+  }).join('');
+}
+
+function addBlock() {
+  if (state.blocks.length >= MAX_BLOCKS) return;
+  state.blockIdCounter++;
+  state.blocks.push({
+    id: state.blockIdCounter,
+    label: `Acorde ${ROMAN[state.blocks.length] || (state.blocks.length + 1)}`,
+    voices: []
+  });
+  renderBlocks();
+}
+
+function removeBlock(id) {
+  if (state.blockPlayingId === id) stopBlock();
+  state.blocks = state.blocks.filter(b => b.id !== id);
+  renderBlocks();
+}
+
+function addVoice(blockId) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+  // Sugere um instrumento e nota razoáveis com base em vozes existentes
+  const usedInsts = new Set(block.voices.map(v => v.inst));
+  const sequence = ['violino', 'viola', 'violoncelo', 'contrabaixo', 'flauta',
+                    'oboe', 'clarinete', 'fagote', 'trompa', 'trompete', 'trombone', 'tuba'];
+  const nextInst = sequence.find(k => !usedInsts.has(k)) || 'violino';
+  // Sugere nota central do instrumento (próxima da freqCenter)
+  const targetFreq = INSTRUMENTS[nextInst].freqCenter;
+  const targetMidi = Math.round(69 + 12 * Math.log2(targetFreq / 440));
+  const pitch = PITCH_LIST.find(p => p.midi === targetMidi) || PITCH_LIST.find(p => p.name === 'A4');
+  block.voices.push({
+    inst: nextInst,
+    note: pitch.name,
+    count: 4,
+    dyn: 'mf'
+  });
+  renderBlocks();
+}
+
+function removeVoice(blockId, voiceIdx) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+  block.voices.splice(voiceIdx, 1);
+  renderBlocks();
+}
+
+function updateVoice(blockId, voiceIdx, patch) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block || !block.voices[voiceIdx]) return;
+  Object.assign(block.voices[voiceIdx], patch);
+  renderBlocks();
+}
+
+function updateBlockLabel(blockId, newLabel) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+  block.label = newLabel || `Acorde ${ROMAN[state.blocks.indexOf(block)] || ''}`;
+}
+
+// ----- Piano-roll SVG por bloco -----
+function renderBlockPianoRoll(block) {
+  const W = 280, H = 180, PAD_L = 30, PAD_R = 8, PAD_T = 8, PAD_B = 24;
+  const inner = { x: PAD_L, y: PAD_T, w: W - PAD_L - PAD_R, h: H - PAD_T - PAD_B };
+
+  // Range de pitch: C1 (24) a C7 (96)
+  const lo = PITCH_RANGE_MIN, hi = PITCH_RANGE_MAX;
+  const range = hi - lo;
+  const midiToY = m => inner.y + inner.h * (1 - (m - lo) / range);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+
+  // Linhas de oitava C2, C3, ..., C6
+  const ocsLabels = [36, 48, 60, 72, 84]; // C2..C6
+  ocsLabels.forEach(m => {
+    const y = midiToY(m);
+    const isC4 = m === 60;
+    svg += `<line x1="${inner.x}" y1="${y}" x2="${inner.x + inner.w}" y2="${y}"
+      stroke="${isC4 ? 'rgba(232,184,95,0.35)' : 'rgba(232,184,95,0.13)'}"
+      stroke-width="${isC4 ? 1 : 0.5}"
+      ${isC4 ? '' : 'stroke-dasharray="2 3"'} />`;
+    const label = NOTE_NAMES[m % 12] + (Math.floor(m / 12) - 1);
+    svg += `<text x="${inner.x - 4}" y="${y + 3}" text-anchor="end"
+      font-family="JetBrains Mono, monospace" font-size="9"
+      fill="rgba(232,184,95,${isC4 ? '0.65' : '0.4'})">${label}</text>`;
+  });
+
+  // Vozes — cada voz é um círculo na altura correta
+  if (block.voices.length === 0) {
+    svg += `<text x="${W/2}" y="${H/2}" text-anchor="middle"
+      font-family="EB Garamond, serif" font-style="italic" font-size="13"
+      fill="rgba(232,184,95,0.45)">sem vozes</text>`;
+  } else {
+    // Distribui as vozes ao longo do eixo X
+    const xStep = inner.w / Math.max(block.voices.length, 1);
+    const famColors = {
+      strings: '#5a7ea8',
+      woods: '#8aa55a',
+      brass: '#c87a3a'
+    };
+    block.voices.forEach((v, i) => {
+      const midi = noteToMidi(v.note);
+      if (midi === null) return;
+      const cx = inner.x + xStep * (i + 0.5);
+      const cy = midiToY(midi);
+      const family = blockFamilyOf(v.inst);
+      const color = famColors[family] || '#888';
+      // Raio proporcional ao log do count
+      const r = Math.max(4, 4 + Math.log2(v.count + 1) * 2.2);
+      // Opacidade proporcional à dinâmica (pp=0.4, ff=1.0)
+      const dynIdx = DYNAMICS.indexOf(v.dyn);
+      const op = 0.4 + 0.6 * (dynIdx / 5);
+      svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"
+        opacity="${op.toFixed(2)}" stroke="rgba(244,236,216,0.8)" stroke-width="0.7"/>`;
+      // Etiqueta com sigla do instrumento e dinâmica
+      const sigla = INSTRUMENTS[v.inst].name.slice(0, 2);
+      svg += `<text x="${cx}" y="${H - 12}" text-anchor="middle"
+        font-family="Cormorant Garamond, serif" font-size="10" font-style="italic"
+        fill="rgba(244,236,216,0.7)">${sigla}</text>`;
+      svg += `<text x="${cx}" y="${H - 3}" text-anchor="middle"
+        font-family="JetBrains Mono, monospace" font-size="8"
+        fill="rgba(232,184,95,0.65)">${v.dyn}·${v.count}</text>`;
+    });
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+function renderBlocks() {
+  const wrap = document.getElementById('blocks-container');
+  const addBtn = document.getElementById('block-add-btn');
+  if (!wrap) return;
+
+  if (state.blocks.length === 0) {
+    wrap.innerHTML = `<div class="block-card empty">
+      Nenhum bloco criado · clique em <strong>+ Adicionar bloco</strong> para começar
+    </div>`;
+    addBtn.disabled = false;
+    return;
+  }
+
+  wrap.innerHTML = state.blocks.map((block, idx) => {
+    const spl = blockSPL(block);
+    const phon = blockPhon(block);
+    const balance = blockBalance(block);
+    const dom = blockDominantFreq(block);
+    const isPlaying = state.blockPlayingId === block.id;
+
+    const voicesHTML = block.voices.length === 0
+      ? `<div class="block-empty-voices">Sem vozes · adicione abaixo</div>`
+      : block.voices.map((v, i) => `
+          <div class="block-voice ${blockFamilyOf(v.inst) || ''}" data-block="${block.id}" data-voice="${i}">
+            <select class="voice-inst">${instrumentOptionsHTML(v.inst)}</select>
+            <select class="voice-note">${pitchOptionsHTML(v.note)}</select>
+            <input class="voice-count" type="number" min="1" max="32" value="${v.count}">
+            <select class="voice-dyn">${dynamicOptionsHTML(v.dyn)}</select>
+            <button class="voice-remove" title="Remover voz">×</button>
+          </div>
+        `).join('');
+
+    return `
+      <div class="block-card" data-block="${block.id}">
+        <div class="block-header">
+          <span class="block-roman">${ROMAN[idx] || (idx + 1)}</span>
+          <input class="block-label-input" type="text" value="${block.label.replace(/"/g, '&quot;')}"
+                 maxlength="40" data-block="${block.id}">
+          <div class="block-actions">
+            <button class="block-play-btn ${isPlaying ? 'playing' : ''}" data-block="${block.id}">
+              ${isPlaying ? '◼ parar' : '▶ tocar'}
+            </button>
+            <button class="block-remove-btn" data-block="${block.id}" title="Remover bloco">remover</button>
+          </div>
+        </div>
+        <div class="block-piano-roll">
+          ${renderBlockPianoRoll(block)}
+          <div class="block-metrics">
+            <div class="block-metric-spl">${isFinite(spl) ? spl.toFixed(1) + ' dB' : '— dB'}</div>
+            <div class="block-metric-row">
+              <span class="label">loudness</span>
+              <span class="val">${isFinite(phon) ? phon.toFixed(0) + ' fones' : '—'}</span>
+            </div>
+            <div class="block-metric-row">
+              <span class="label">freq. dom.</span>
+              <span class="val">${dom > 0 ? dom.toFixed(0) + ' Hz' : '—'}</span>
+            </div>
+            <div class="block-metric-row">
+              <span class="label">vozes · músicos</span>
+              <span class="val">${block.voices.length} · ${block.voices.reduce((a, v) => a + (v.count || 0), 0)}</span>
+            </div>
+            <div class="block-metric-row" style="margin-top:6px;border-top:1px solid rgba(232,184,95,0.1);padding-top:4px">
+              <span class="label">cordas</span>
+              <span class="val">${isFinite(balance.strings) ? balance.strings.toFixed(1) : '—'}</span>
+            </div>
+            <div class="block-metric-row">
+              <span class="label">madeiras</span>
+              <span class="val">${isFinite(balance.woods) ? balance.woods.toFixed(1) : '—'}</span>
+            </div>
+            <div class="block-metric-row">
+              <span class="label">metais</span>
+              <span class="val">${isFinite(balance.brass) ? balance.brass.toFixed(1) : '—'}</span>
+            </div>
+          </div>
+        </div>
+        <div class="block-body">
+          ${block.voices.length > 0 ? `
+            <div class="block-voices-header">
+              <span>instrumento</span>
+              <span>altura</span>
+              <span>nº</span>
+              <span>dinâmica</span>
+              <span></span>
+            </div>` : ''}
+          <div class="block-voices">${voicesHTML}</div>
+          <button class="block-add-voice" data-block="${block.id}">+ voz</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  addBtn.disabled = state.blocks.length >= MAX_BLOCKS;
+  wireBlockEvents();
+}
+
+function wireBlockEvents() {
+  const wrap = document.getElementById('blocks-container');
+
+  // Adicionar voz
+  wrap.querySelectorAll('.block-add-voice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      addVoice(parseInt(btn.dataset.block, 10));
+    });
+  });
+
+  // Remover bloco
+  wrap.querySelectorAll('.block-remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.block, 10);
+      const block = state.blocks.find(b => b.id === id);
+      if (block && block.voices.length > 0) {
+        if (!confirm(`Remover "${block.label}"?`)) return;
+      }
+      removeBlock(id);
+    });
+  });
+
+  // Tocar bloco
+  wrap.querySelectorAll('.block-play-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.block, 10);
+      if (state.blockPlayingId === id) {
+        stopBlock();
+      } else {
+        playBlock(id);
+      }
+    });
+  });
+
+  // Label editável
+  wrap.querySelectorAll('.block-label-input').forEach(input => {
+    input.addEventListener('change', () => {
+      updateBlockLabel(parseInt(input.dataset.block, 10), input.value.trim());
+    });
+  });
+
+  // Eventos de voz
+  wrap.querySelectorAll('.block-voice').forEach(row => {
+    const blockId = parseInt(row.dataset.block, 10);
+    const voiceIdx = parseInt(row.dataset.voice, 10);
+    row.querySelector('.voice-inst').addEventListener('change', (e) => {
+      updateVoice(blockId, voiceIdx, { inst: e.target.value });
+    });
+    row.querySelector('.voice-note').addEventListener('change', (e) => {
+      updateVoice(blockId, voiceIdx, { note: e.target.value });
+    });
+    row.querySelector('.voice-count').addEventListener('change', (e) => {
+      const n = Math.max(1, Math.min(32, parseInt(e.target.value, 10) || 1));
+      updateVoice(blockId, voiceIdx, { count: n });
+    });
+    row.querySelector('.voice-dyn').addEventListener('change', (e) => {
+      updateVoice(blockId, voiceIdx, { dyn: e.target.value });
+    });
+    row.querySelector('.voice-remove').addEventListener('click', () => {
+      removeVoice(blockId, voiceIdx);
+    });
+  });
+}
+
+// ----- Playback de blocos -----
+function stopBlock() {
+  state.blockPlayingSources.forEach(s => {
+    try { s.stop(); } catch (e) {}
+  });
+  state.blockPlayingSources = [];
+  state.blockPlayingId = null;
+  if (masterGain) {
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+  }
+  renderBlocks();
+}
+
+async function playBlock(blockId) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block || block.voices.length === 0) return;
+  if (isPlaying) stopAudio();
+  if (state.blockPlayingId) stopBlock();
+
+  if (!audioCtx) initAudio();
+  if (audioCtx.state === 'suspended') {
+    try { await audioCtx.resume(); } catch (e) {}
+  }
+
+  state.blockPlayingId = blockId;
+  const totalDB = blockSPL(block);
+  const targetGain = Math.min(0.65, Math.max(0.03,
+    Math.pow(10, (totalDB - 100) / 20) * 0.32));
+
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.setValueAtTime(0, audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(targetGain, audioCtx.currentTime + 0.12);
+
+  block.voices.forEach(v => {
+    if (v.count === 0 || !INSTRUMENTS[v.inst]) return;
+    playVoice(v, totalDB);
+  });
+
+  renderBlocks();
+
+  // Para automaticamente após 3.5s
+  setTimeout(() => {
+    if (state.blockPlayingId === blockId) stopBlock();
+  }, 3500);
+}
+
+function playVoice(voice, totalDB) {
+  const instLevel = levelMultiple(INSTRUMENTS[voice.inst].levels[voice.dyn], voice.count);
+  const relGain = Math.pow(10, (instLevel - totalDB) / 20);
+
+  // Tenta usar sample real
+  const match = state.sampleStats.total > 0 ? findBestSample(voice.inst, voice.dyn) : null;
+
+  if (match && match.sample.buffer) {
+    const gain = audioCtx.createGain();
+    gain.gain.value = relGain * 0.5;
+    gain.connect(masterGain);
+
+    const src = audioCtx.createBufferSource();
+    src.buffer = match.sample.buffer;
+
+    // Pitch shift via playbackRate, se o sample tem nota identificada
+    if (match.sample.semitones && noteToMidi(voice.note)) {
+      const targetMidi = noteToMidi(voice.note);
+      const sourceMidi = match.sample.semitones;
+      const semitoneShift = targetMidi - sourceMidi;
+      // Limita a transposição a ±12 semitons para evitar artefatos extremos
+      if (Math.abs(semitoneShift) <= 12) {
+        src.playbackRate.value = Math.pow(2, semitoneShift / 12);
+      } else {
+        // Se a diferença for muito grande, usa síntese no lugar
+        synthesizeVoice(voice, gain);
+        return;
+      }
+    }
+
+    src.connect(gain);
+    if (match.sample.buffer.duration < 3) {
+      src.loop = true;
+      src.loopStart = match.sample.buffer.duration * 0.2;
+      src.loopEnd = match.sample.buffer.duration * 0.8;
+    }
+    src.start();
+    state.blockPlayingSources.push(src);
+  } else {
+    // Síntese: usa pitch correto da voz
+    const gain = audioCtx.createGain();
+    gain.gain.value = relGain * 0.35;
+    gain.connect(masterGain);
+    synthesizeVoice(voice, gain);
+  }
+}
+
+function synthesizeVoice(voice, outGain) {
+  const family = blockFamilyOf(voice.inst);
+  const fundamental = noteToFreq(voice.note);
+  let harmonics, weights, oscType;
+  if (family === 'strings') {
+    harmonics = [1, 2, 3, 4, 5]; weights = [1, 0.6, 0.4, 0.3, 0.15];
+    oscType = 'sawtooth';
+  } else if (family === 'woods') {
+    harmonics = [1, 2, 3, 4, 5, 6]; weights = [1, 0.5, 0.5, 0.3, 0.25, 0.15];
+    oscType = 'triangle';
+  } else {
+    harmonics = [1, 2, 3, 4, 5, 6, 7]; weights = [0.8, 1, 0.7, 0.6, 0.4, 0.3, 0.2];
+    oscType = 'square';
+  }
+
+  const norm = 1 / harmonics.length;
+  harmonics.forEach((h, idx) => {
+    const f = fundamental * h;
+    if (f > 12000) return;
+    const osc = audioCtx.createOscillator();
+    osc.type = oscType;
+    osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.005);
+    const oscGain = audioCtx.createGain();
+    oscGain.gain.value = weights[idx] * norm;
+
+    const lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 4 + Math.random() * 2;
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = f * 0.003;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    lfo.start();
+
+    osc.connect(oscGain);
+    oscGain.connect(outGain);
+    osc.start();
+    state.blockPlayingSources.push(osc, lfo);
+  });
+}
+
+/* -------------------------------------------------------------------------
    13. UPDATE COMPLETO
    ------------------------------------------------------------------------- */
 function updateAll() {
@@ -3416,6 +4476,13 @@ function init() {
   // Biblioteca de samples
   wireSampleLibrary();
   renderSampleLibrary();
+
+  // Blocos de acordes
+  const blockAddBtn = document.getElementById('block-add-btn');
+  if (blockAddBtn) {
+    blockAddBtn.addEventListener('click', addBlock);
+  }
+  renderBlocks();
 
   // Aplicar preset inicial
   applyPreset('meyer49');
