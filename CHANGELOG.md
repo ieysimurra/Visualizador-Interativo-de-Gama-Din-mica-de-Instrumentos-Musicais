@@ -6,6 +6,81 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.4.1] — 2026-06-02
+
+### Corrigido
+
+- **VU meter com escala invertida** — desde a v1.0.0, a escala do medidor
+  analógico mostrava 130 dB / `ff` à **esquerda** e 40 dB / `pp` à **direita**,
+  contrariando a convenção universal de instrumentos analógicos
+  (valores baixos à esquerda, valores altos à direita).
+  Causa: os ângulos extremos do arco (`startAngle = 200°`, `endAngle = -20°`)
+  produziam direção invertida quando aplicados à função `polar()` do SVG.
+  Solução: trocar os ângulos extremos para `startAngle = -20°` e `endAngle = 200°`,
+  inverter o sweep flag do arco SVG de `1` para `0`, e usar `Math.abs` no
+  cálculo do `largeArc` para resiliência contra a inversão de sinal.
+
+### Verificação
+
+Posições calculadas após correção:
+
+| dB | Posição | Comentário |
+|---|---|---|
+| 40 | x=44 (esquerda) | mínimo da escala |
+| 88 | x=199 (centro/topo) | região de mf |
+| 118 | x=323 (direita) | Tutti Meyer · onde a agulha deve apontar |
+| 130 | x=316 (direita) | máximo da escala |
+
+---
+
+## [1.4.0] — 2026-06-02
+
+### Adicionado · Normalização RMS automática (Opção A)
+
+- **Medição automática de RMS** durante o carregamento de cada sample.
+  Calcula o RMS na região sustentada (descarta os primeiros e últimos 15% para
+  ignorar attack/release) e armazena `rmsDbFS` e `normalizationGain` por sample.
+- **Fator de correção** que iguala todos os samples a uma referência interna de
+  −20 dBFS RMS. Sobre essa base nivelada, o ganho de Meyer aplicado por cima
+  reproduz a relação dinâmica física correta entre pp/p/mp/mf/f/ff —
+  independente da filosofia de normalização do banco fonte.
+- **Limite de segurança** de ±18 dB no fator de correção, evitando amplificação
+  excessiva de samples problemáticos.
+- **Análise diagnóstica do banco**: o painel da biblioteca agora mostra a média
+  de RMS por dinâmica e classifica automaticamente o banco como:
+  - `banco preserva dinâmica natural` (diferença pp→ff ≥ 25 dB)
+  - `banco parcialmente normalizado` (10 dB ≤ diferença < 25 dB)
+  - `banco normalizado` (diferença < 10 dB)
+- **Aplicada em quatro pontos** de playback: `playReference` (online), 
+  `scheduleCalibratedGraphOffline` (renderização WAV calibrada),
+  `playVoice` (online, blocos) e `scheduleBlockGraphOffline` (WAV de bloco).
+
+### Adicionado · Validade epistêmica (Opção C)
+
+- **Nova seção "Validade dos resultados · honestidade epistêmica"** na
+  documentação pedagógica, listando explicitamente:
+  - ✓ Camada matemática validada (soma logarítmica, ISO 226, Fig. 6.4 de Henrique)
+  - ⚠ Tabela de níveis Meyer/Patterson como aproximação (±2-3 dB)
+  - ⚠ Calibração 0 dBFS ≈ 100 dB SPL como convenção pedagógica
+  - ⚠ Playback com samples e a normalização RMS aplicada
+  - ✗ Aspectos não modelados (variação por registro, técnica estendida, sala, etc.)
+- **Recomendação de uso** indicando que o app é apropriado para investigar
+  *relações* entre configurações, e que para previsão de valores absolutos
+  em situações reais, medições com sonômetro calibrado são insubstituíveis.
+- **Callout discreto** no player principal lembrando que apenas comparações
+  relativas são fisicamente válidas, com link para a seção completa.
+
+### Verificação numérica
+
+Com banco normalizado típico (pp RMS = −18 dBFS, ff RMS = −13 dBFS):
+- **Sem correção (v1.3.0)**: pp→ff produzia 35 dB de diferença (esperado: 30)
+- **Com correção (v1.4.0)**: pp→ff produz exatos **30,0 dB** ✓
+
+Com banco que preserva dinâmica natural (pp RMS = −38 dBFS, ff RMS = −10 dBFS):
+- **Com correção (v1.4.0)**: pp→ff produz **30,0 dB** ✓ (consistente)
+
+---
+
 ## [1.3.0] — 2026-06-02
 
 ### Adicionado

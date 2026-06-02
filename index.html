@@ -1371,6 +1371,43 @@ a:hover { border-color: var(--varnish); }
   border-left: 3px solid var(--brass);
 }
 
+/* Marcadores de validade epistêmica nas docs */
+.validity-ok, .validity-warn, .validity-err {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-left: 12px;
+  border-left: 3px solid;
+  margin-top: 20px;
+  font-family: 'Cormorant Garamond', serif;
+}
+.validity-ok  { border-left-color: #5a8a3a; color: #3d6024; }
+.validity-warn { border-left-color: #c69845; color: #8a5e1a; }
+.validity-err { border-left-color: #b04030; color: #802018; }
+
+/* Callout discreto próximo ao player */
+.epistemic-callout {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(232, 184, 95, 0.08);
+  border: 1px solid rgba(232, 184, 95, 0.25);
+  border-radius: 4px;
+  font-family: 'EB Garamond', serif;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--paper);
+  opacity: 0.75;
+  line-height: 1.45;
+}
+.epistemic-callout a {
+  color: var(--brass-glow);
+  font-style: normal;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(232, 184, 95, 0.5);
+}
+.epistemic-callout a:hover { opacity: 1; border-bottom-style: solid; }
+
 .references {
   margin-top: 32px;
   padding-top: 24px;
@@ -1939,6 +1976,9 @@ a:hover { border-color: var(--varnish); }
         <div class="calibration-warning">
           O nível absoluto depende da calibração do seu sistema — ajuste o volume confortavelmente com a configuração de menor intensidade antes de comparar.
         </div>
+        <div class="epistemic-callout">
+          Apenas comparações <strong>relativas</strong> entre configurações são fisicamente válidas. Os valores absolutos em dB SPL são aproximações didáticas baseadas em médias estatísticas de Meyer (1995). Para o detalhamento completo das camadas de validade do modelo, consulte a <a href="#docs">documentação pedagógica</a>.
+        </div>
 
         <!-- Biblioteca de samples -->
         <div class="sample-library" id="sample-library">
@@ -2103,6 +2143,29 @@ a:hover { border-color: var(--varnish); }
         <li>Justificar a prática orquestrante histórica de balanceamento — por que os metais não tocam constantemente em <em>fortissimo</em>, por exemplo.</li>
       </ol>
 
+      <h3>Validade dos resultados · honestidade epistêmica</h3>
+      <p>Esta aplicação combina três camadas com graus distintos de confiabilidade. O bom uso pedagógico exige conhecê-las explicitamente — modelo é modelo, medição é medição.</p>
+
+      <h4 class="validity-ok">✓ Camada matemática · validada</h4>
+      <p>Soma logarítmica de fontes incoerentes (<code>L<sub>total</sub> = 10·log₁₀(Σ 10^(Lᵢ/10))</code>), lei dos N performers (<code>L<sub>n</sub> = L₁ + 10·log₁₀(n)</code>), e curvas isofônicas ISO 226:2003 são implementadas com precisão numérica (erro round-trip a 1 kHz &lt; 0,02 dB). A reprodução da Figura 6.4 de Henrique para o tutti de Meyer (49 músicos em <em>fortissimo</em>) produz <strong>118,0 dB SPL</strong> — exatamente o valor publicado. Esta camada é confiável.</p>
+
+      <h4 class="validity-warn">⚠ Tabela de níveis por instrumento · aproximação razoável</h4>
+      <p>Os valores em dB SPL atribuídos a cada combinação instrumento × dinâmica vêm de Meyer (1995) e Patterson (1974) — <strong>médias estatísticas</strong> de medições. A precisão típica é de <strong>±2 a 3 dB</strong> entre instrumentistas, registros e técnicas; o <em>pianissimo</em> varia mais (±5 dB) que o <em>fortissimo</em>. O próprio Henrique nota que Meyer combina medidas em <em>fast scales</em> e <em>isolated notes</em> — não há uma medida canônica única. Para análise comparativa pedagógica é adequada; para previsão precisa de SPL em situações reais, não use estes valores.</p>
+
+      <h4 class="validity-warn">⚠ Calibração de SPL absoluto · convenção</h4>
+      <p>A relação "0 dBFS ≈ 100 dB SPL" usada no playback é uma <strong>convenção pedagógica</strong>, não uma medição. O dB SPL real que sai dos alto-falantes depende do volume do sistema, sensibilidade dos transdutores, distância ao ouvinte e acústica da sala. Apenas comparações <em>relativas</em> entre configurações são válidas — por isso o aviso de calibração no painel.</p>
+
+      <h4 class="validity-warn">⚠ Playback com samples · normalização RMS automática</h4>
+      <p>Bancos como FULLSOL/SOL2 e Philharmonia normalizam cada arquivo individualmente (pico em torno de −3 dBFS), o que <strong>achata parcialmente a diferença dinâmica gravada</strong>. Por exemplo, dois samples de violino — um pp e um ff — podem ter apenas 5 dB de diferença real entre seus RMS, embora Meyer preveja 30 dB.</p>
+      <p>A partir da v1.4, o aplicativo mede o RMS de cada sample carregado e aplica um <strong>fator de correção</strong> que o iguala a uma referência interna de −20 dBFS RMS. Sobre essa base nivelada, o ganho de Meyer aplicado por cima reproduz a relação dinâmica física correta. O painel de diagnóstico da biblioteca mostra a média de RMS por dinâmica, permitindo verificar se o banco está normalizado, parcialmente normalizado, ou preserva a dinâmica natural.</p>
+      <p>Mesmo com a correção, persistem três limitações: (a) o pitch-shift via <code>playbackRate</code> altera o timbre quando a transposição excede ±6 semitons; (b) a frequência dominante usada nas curvas isofônicas é o centro fixo do instrumento, não o espectro real do sample (que varia com a dinâmica); (c) bancos com dinâmica natural muito ampla podem ter alguns samples limitados pelo teto de correção de ±18 dB.</p>
+
+      <h4 class="validity-err">✗ Aspectos NÃO modelados</h4>
+      <p>Para evitar atribuir falsa precisão ao aplicativo, é importante listar o que ele <em>não</em> modela: variação de nível por registro (uma trompa no agudo é mais brilhante e direcional que no grave); variação por técnica estendida (<em>pizzicato</em>, <em>sul ponticello</em>, <em>flautando</em>, surdina); efeito Doppler; difração e reflexões em sala; resposta do sistema auditivo a transientes; mascaramento espectral entre instrumentos. Estas dependem de modelos psicoacústicos mais elaborados ou medições in situ.</p>
+
+      <h4>Recomendação de uso</h4>
+      <p>Use o aplicativo para investigar <strong>relações</strong>: como muda o nível ao dobrar instrumentistas, qual a contribuição relativa de cada naipe, como diferentes registros se projetam diferentemente segundo Fletcher-Munson, por que orquestrações historicamente eficazes funcionam matematicamente. Evite usá-lo para afirmar valores absolutos de SPL em situações reais — para isso, medições com sonômetro calibrado em ambiente conhecido são insubstituíveis.</p>
+
       <h3>Conceitos teóricos</h3>
 
       <h4>Nível de potência sonora</h4>
@@ -2145,6 +2208,12 @@ a:hover { border-color: var(--varnish); }
       <h4>Aplicação à orquestração</h4>
       <p>A presença dominante dos metais — especialmente trompetes e trompas — não é apenas uma questão de potência absoluta: estes instrumentos têm conteúdo espectral concentrado justamente na banda de sensibilidade máxima do ouvido. Um contrabaixo a 90 dB SPL pode parecer significativamente mais discreto que um trompete ao mesmo nível.</p>
 
+      <h3>Sequência didática sugerida (3h)</h3>
+      <p><strong>0:00–0:30</strong> · Introdução: conceitos de potência, intensidade e pressão sonora. Apresentação das figuras 6.3 e 6.4 de Henrique (Meyer 1995).</p>
+      <p><strong>0:30–1:30</strong> · Prática 1: explorar a aplicação. Estudantes em duplas reproduzem a Figura 6.4 (49 músicos, 118 dB) e comparam com configurações alternativas.</p>
+      <p><strong>1:30–1:45</strong> · Intervalo.</p>
+      <p><strong>1:45–2:30</strong> · Prática 2: cada dupla projeta uma orquestração específica (ex: Mahler Sinfonia 8 vs. Mozart Sinfonia 40) e justifica acusticamente as escolhas históricas.</p>
+      <p><strong>2:30–3:00</strong> · Discussão coletiva sobre balanceamento orquestral, com referências ao tratado de orquestração (Berlioz/Strauss, Adler).</p>
     </div>
   </div>
 
@@ -2245,7 +2314,7 @@ const PRESETS = {
     state: {}
   },
   meyer49: {
-    label: 'Tutti',
+    label: 'Tutti de Meyer',
     titleIt: '49 músicos',
     desc: 'Reprodução da Fig. 6.4',
     state: {
@@ -2264,8 +2333,8 @@ const PRESETS = {
     }
   },
   mozart: {
-    label: 'Modelo de Orquestra 1',
-    titleIt: 'com',
+    label: 'Mozart',
+    titleIt: 'Sinfonia clássica',
     desc: '~35 músicos · mf',
     state: {
       violino: { count: 12, dyn: 'mf' },
@@ -2281,8 +2350,8 @@ const PRESETS = {
     }
   },
   beethoven: {
-    label: 'Modelo de Orquestra 2 - ',
-    titleIt: 'Sinfônica com',
+    label: 'Beethoven',
+    titleIt: 'Sinfônica romântica',
     desc: '~55 músicos · f',
     state: {
       violino: { count: 16, dyn: 'f' },
@@ -2299,8 +2368,8 @@ const PRESETS = {
     }
   },
   mahler: {
-    label: 'Modelo de Orquestra 3',
-    titleIt: 'Mais instrumentistas',
+    label: 'Mahler',
+    titleIt: 'Pós-romântica',
     desc: '~90 músicos · ff',
     state: {
       violino: { count: 20, dyn: 'ff' },
@@ -2704,16 +2773,14 @@ function updateFamilyPanels() {
    ------------------------------------------------------------------------- */
 function renderVUMeter() {
   const svg = document.getElementById('vu-svg');
-  // Construir VU meter analógico estilo vintage
-  // arco de -180° a 0° (parte superior do círculo)
-  // escala 40 a 130 dB
+  // VU meter analógico estilo vintage
+  // Convenção: dB mínimo (40) à esquerda, dB máximo (130) à direita
 
   const cx = 180, cy = 180, r = 145;
-  const startAngle = 200; // graus
-  const endAngle = -20;   // graus
-  const angleSpan = startAngle - endAngle;
+  const startAngle = -20;   // dBMin → esquerda-inferior (visualmente)
+  const endAngle = 200;     // dBMax → direita-inferior
+  const angleSpan = startAngle - endAngle;   // = -220 (negativo, pois vai "crescer" para a direita)
 
-  // converter dB para ângulo
   function dbToAngle(db) {
     const dbMin = 40, dbMax = 130;
     const t = Math.max(0, Math.min(1, (db - dbMin) / (dbMax - dbMin)));
@@ -2727,13 +2794,13 @@ function renderVUMeter() {
 
   let html = '';
 
-  // arco de fundo
+  // arco de fundo · sweep=0 porque agora começamos pela esquerda e vamos pela direita por cima
   const arcStart = polar(startAngle, r);
   const arcEnd = polar(endAngle, r);
-  html += `<path d="M ${arcStart[0]} ${arcStart[1]} A ${r} ${r} 0 0 1 ${arcEnd[0]} ${arcEnd[1]}"
+  html += `<path d="M ${arcStart[0]} ${arcStart[1]} A ${r} ${r} 0 1 0 ${arcEnd[0]} ${arcEnd[1]}"
            fill="none" stroke="rgba(232, 184, 95, 0.2)" stroke-width="2"/>`;
 
-  // arco gradiente para nível atual
+  // arco gradiente para nível atual (verde à esquerda → vermelho à direita)
   html += `<defs>
     <linearGradient id="vu-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#5a8c6a"/>
@@ -2746,7 +2813,7 @@ function renderVUMeter() {
     </filter>
   </defs>`;
 
-  // marcas principais (cada 10 dB)
+  // marcas principais (cada 5 dB, rótulo a cada 10 dB)
   for (let db = 40; db <= 130; db += 5) {
     const isMajor = (db % 10 === 0);
     const ang = dbToAngle(db);
@@ -2766,7 +2833,7 @@ function renderVUMeter() {
   // setor colorido representando o nível
   html += `<g id="vu-arc-group"></g>`;
 
-  // marcas dinâmicas (pp, p, mp, mf, f, ff)
+  // marcas dinâmicas (pp à esquerda → ff à direita)
   const dynamicMarks = [
     { db: 50, label: 'pp' }, { db: 65, label: 'p' }, { db: 75, label: 'mp' },
     { db: 88, label: 'mf' }, { db: 100, label: 'f' }, { db: 115, label: 'ff' }
@@ -2783,7 +2850,7 @@ function renderVUMeter() {
   html += `<circle cx="${cx}" cy="${cy}" r="6" fill="#3a2a1a" stroke="#e8b85f" stroke-width="1"/>`;
   html += `<circle cx="${cx}" cy="${cy}" r="2" fill="#e8b85f"/>`;
 
-  // agulha (será atualizada dinamicamente)
+  // agulha (apontando para cima na rotação 0; será girada dinamicamente)
   html += `<g id="vu-needle" transform="rotate(0 ${cx} ${cy})">
     <line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - r + 20}"
           stroke="#1a0f08" stroke-width="2.5" stroke-linecap="round" filter="url(#needle-shadow)"/>
@@ -2793,15 +2860,14 @@ function renderVUMeter() {
           stroke="#3a2a1a" stroke-width="3" stroke-linecap="round"/>
   </g>`;
 
-  // ajustar viewBox para SVG quadrado-ish
   svg.setAttribute('viewBox', '20 30 320 180');
   svg.innerHTML = html;
 }
 
 function updateVUMeter(db) {
   const cx = 180, cy = 180;
-  const startAngle = 200, endAngle = -20;
-  const angleSpan = startAngle - endAngle;
+  const startAngle = -20, endAngle = 200;
+  const angleSpan = startAngle - endAngle;   // -220
   const dbMin = 40, dbMax = 130;
 
   function dbToAngle(d) {
@@ -2818,21 +2884,21 @@ function updateVUMeter(db) {
   const arcGroup = document.getElementById('vu-arc-group');
   if (!needle || !arcGroup) return;
 
-  // animar a agulha
+  // animar a agulha — rotação 0 = apontando pra cima; ângulo -20° → esquerda, 200° → direita
   const targetAngle = isFinite(db) ? dbToAngle(db) : startAngle;
   const needleRotation = 90 - targetAngle;
   needle.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
   needle.setAttribute('transform', `rotate(${needleRotation} ${cx} ${cy})`);
 
-  // arco preenchido
+  // arco preenchido — começa no startAngle, vai até o ângulo correspondente ao db atual
   const r = 145;
   if (isFinite(db) && db > 40) {
     const angStart = startAngle;
     const angEnd = dbToAngle(db);
     const [sx, sy] = polar(angStart, r);
     const [ex, ey] = polar(angEnd, r);
-    const largeArc = (angStart - angEnd) > 180 ? 1 : 0;
-    arcGroup.innerHTML = `<path d="M ${sx} ${sy} A ${r} ${r} 0 ${largeArc} 1 ${ex} ${ey}"
+    const largeArc = Math.abs(angStart - angEnd) > 180 ? 1 : 0;
+    arcGroup.innerHTML = `<path d="M ${sx} ${sy} A ${r} ${r} 0 ${largeArc} 0 ${ex} ${ey}"
              fill="none" stroke="url(#vu-gradient)" stroke-width="8" opacity="0.75"/>`;
   } else {
     arcGroup.innerHTML = '';
@@ -3288,16 +3354,65 @@ function parseSampleFile(filename, fullPath) {
    bibliotecas grandes (FULLSOL = milhares de arquivos). Reporta progresso
    via callback para a UI atualizar em tempo real.
    ----------------------------------------------------------------------- */
+
+/* ----- Normalização RMS dos samples -----
+ * Bancos como FULLSOL/Philharmonia normalizam cada arquivo (pico em torno de
+ * -3 dBFS) — isso APAGA parcialmente a diferença dinâmica gravada. Para
+ * restaurar a relação física correta entre dinâmicas, medimos o RMS real de
+ * cada sample e calculamos um fator de correção que o leva para um nível de
+ * referência consistente. Depois disso, o ganho de Meyer aplicado por cima
+ * produz a relação dinâmica correta entre pp/p/mp/mf/f/ff.
+ *
+ * Referência arbitrária mas consistente: -20 dBFS RMS. Não tem significado
+ * absoluto em SPL (o sistema do usuário define isso); o que importa é que
+ * todos os samples partem da mesma linha de base antes de receberem o ganho
+ * relativo de Meyer.
+ */
+const REFERENCE_RMS_DBFS = -20;
+const MIN_RMS_DBFS = -60;          // ignora samples praticamente silenciosos
+const MAX_CORRECTION_DB = 18;      // limite de segurança contra outliers
+
+function measureRMS(audioBuffer) {
+  // Mede o RMS da região sustentada (descarta os primeiros e últimos 15%
+  // para evitar attack/release). Se for estéreo, faz média dos canais.
+  const numCh = audioBuffer.numberOfChannels;
+  const len = audioBuffer.length;
+  if (len < 1024) return MIN_RMS_DBFS;
+
+  const start = Math.floor(len * 0.15);
+  const end = Math.floor(len * 0.85);
+  const n = end - start;
+  let sumSq = 0;
+
+  for (let ch = 0; ch < numCh; ch++) {
+    const data = audioBuffer.getChannelData(ch);
+    for (let i = start; i < end; i++) {
+      sumSq += data[i] * data[i];
+    }
+  }
+
+  const meanSq = sumSq / (n * numCh);
+  if (meanSq <= 0) return MIN_RMS_DBFS;
+  const rms = Math.sqrt(meanSq);
+  return 20 * Math.log10(Math.max(rms, 1e-10));
+}
+
+function computeNormalizationGain(rmsDbFS) {
+  // Retorna o ganho linear que leva o sample do seu RMS atual para o nível de
+  // referência, com limite de segurança para não amplificar samples ruins
+  // a níveis perigosos.
+  if (rmsDbFS <= MIN_RMS_DBFS) return 1;
+  const correctionDb = REFERENCE_RMS_DBFS - rmsDbFS;
+  const clamped = Math.max(-MAX_CORRECTION_DB, Math.min(MAX_CORRECTION_DB, correctionDb));
+  return Math.pow(10, clamped / 20);
+}
+
 async function loadSampleFiles(files, onProgress) {
   if (!audioCtx) initAudio();
-  // Em alguns navegadores, audioCtx.resume() falha silenciosamente fora de
-  // user gesture. Tentamos e seguimos — decodeAudioData ainda funciona em
-  // contexto suspended desde que tenha havido user gesture (clique no botão).
   if (audioCtx.state === 'suspended') {
     try { await audioCtx.resume(); } catch (e) { /* ignora */ }
   }
 
-  // Pré-filtra arquivos com extensão de áudio
   const audioFiles = [];
   for (const file of files) {
     if (/\.(wav|aiff?|mp3|ogg|flac|m4a|webm|opus)$/i.test(file.name)) {
@@ -3309,11 +3424,10 @@ async function loadSampleFiles(files, onProgress) {
   const total = audioFiles.length;
   let loaded = 0, unrecog = 0, failed = 0;
   const errors = [];
-  const parsedExamples = []; // primeiros 10 parses bem-sucedidos para diagnóstico
-  const unrecogExamples = []; // primeiros 10 não reconhecidos para diagnóstico
+  const parsedExamples = [];
+  const unrecogExamples = [];
   let processed = 0;
 
-  // Função que processa UM arquivo
   async function processOne(file) {
     const fullPath = file.webkitRelativePath || file.relativePath || file.name;
     const parsed = parseSampleFile(file.name, fullPath);
@@ -3329,25 +3443,28 @@ async function loadSampleFiles(files, onProgress) {
 
     try {
       const arrBuf = await file.arrayBuffer();
-      // decodeAudioData pode receber callbacks ou retornar Promise.
-      // O cast para Promise garante compatibilidade.
       const audioBuf = await new Promise((resolve, reject) => {
         const r = audioCtx.decodeAudioData(arrBuf, resolve, reject);
         if (r && typeof r.then === 'function') r.then(resolve, reject);
       });
       const semitones = noteToSemitones(parsed.note);
+      const rmsDbFS = measureRMS(audioBuf);
+      const normalizationGain = computeNormalizationGain(rmsDbFS);
       state.samples[parsed.inst][parsed.dynamic].push({
         buffer: audioBuf,
         note: parsed.note,
         semitones: semitones,
         originalName: file.name,
-        fullPath: fullPath
+        fullPath: fullPath,
+        rmsDbFS: rmsDbFS,
+        normalizationGain: normalizationGain
       });
       loaded++;
       if (parsedExamples.length < 10) {
         parsedExamples.push({
           name: file.name, inst: parsed.inst,
-          note: parsed.note, dyn: parsed.dynamic
+          note: parsed.note, dyn: parsed.dynamic,
+          rms: rmsDbFS.toFixed(1)
         });
       }
     } catch (e) {
@@ -3376,18 +3493,37 @@ async function loadSampleFiles(files, onProgress) {
 function recomputeSampleStats() {
   let total = 0;
   state.sampleStats.byInstrument = {};
+  state.sampleStats.rmsByDyn = { pp: [], p: [], mp: [], mf: [], f: [], ff: [] };
   for (const instKey in state.samples) {
     let instTotal = 0;
     const byDyn = { pp: 0, p: 0, mp: 0, mf: 0, f: 0, ff: 0 };
     for (const dyn of DYNAMICS) {
-      const n = state.samples[instKey][dyn].length;
+      const arr = state.samples[instKey][dyn];
+      const n = arr.length;
       byDyn[dyn] = n;
       instTotal += n;
+      // Coleta RMS para análise global
+      arr.forEach(s => {
+        if (typeof s.rmsDbFS === 'number' && isFinite(s.rmsDbFS)) {
+          state.sampleStats.rmsByDyn[dyn].push(s.rmsDbFS);
+        }
+      });
     }
     state.sampleStats.byInstrument[instKey] = { total: instTotal, byDyn };
     total += instTotal;
   }
   state.sampleStats.total = total;
+
+  // Calcula médias de RMS por dinâmica — diagnóstico da normalização do banco
+  state.sampleStats.rmsMeanByDyn = {};
+  for (const dyn of DYNAMICS) {
+    const arr = state.sampleStats.rmsByDyn[dyn];
+    if (arr.length > 0) {
+      state.sampleStats.rmsMeanByDyn[dyn] = arr.reduce((a, b) => a + b, 0) / arr.length;
+    } else {
+      state.sampleStats.rmsMeanByDyn[dyn] = null;
+    }
+  }
 }
 
 /* -------------------------------------------------------------------------
@@ -3505,9 +3641,12 @@ function renderUnrecognized() {
           if (r && typeof r.then === 'function') r.then(resolve, reject);
         });
         const note = detectNote(entry.file.name) || null;
+        const rmsDbFS = measureRMS(audioBuf);
+        const normalizationGain = computeNormalizationGain(rmsDbFS);
         state.samples[inst][dyn].push({
           buffer: audioBuf, note, semitones: noteToSemitones(note),
-          originalName: entry.file.name, fullPath: entry.fullPath
+          originalName: entry.file.name, fullPath: entry.fullPath,
+          rmsDbFS: rmsDbFS, normalizationGain: normalizationGain
         });
         state.unrecognized.splice(idx, 1);
         recomputeSampleStats();
@@ -3564,11 +3703,45 @@ function renderSampleDiagnostic(result) {
   if (result.failed > 0) html += ` · <span class="diag-err">erros: ${result.failed}</span>`;
   html += `</div>`;
 
+  // ----- Análise de normalização do banco -----
+  if (state.sampleStats.rmsMeanByDyn) {
+    const rmsHasData = DYNAMICS.some(d => state.sampleStats.rmsMeanByDyn[d] !== null);
+    if (rmsHasData) {
+      // Diferença ff-pp esperada por Meyer: ~30 dB. No banco normalizado: ~5-15 dB.
+      const ppRms = state.sampleStats.rmsMeanByDyn.pp;
+      const ffRms = state.sampleStats.rmsMeanByDyn.ff;
+      let rangeMsg = '';
+      if (ppRms !== null && ffRms !== null) {
+        const diff = ffRms - ppRms;
+        if (diff < 10) {
+          rangeMsg = `<span class="diag-warn">banco aparentemente normalizado (diferença pp→ff de apenas ${diff.toFixed(1)} dB no áudio bruto · esperado físico: ~30 dB)</span>`;
+        } else if (diff < 25) {
+          rangeMsg = `<span class="diag-warn">banco parcialmente normalizado (diferença pp→ff de ${diff.toFixed(1)} dB)</span>`;
+        } else {
+          rangeMsg = `<span class="diag-ok">banco preserva dinâmica natural (diferença pp→ff de ${diff.toFixed(1)} dB)</span>`;
+        }
+      }
+      html += `<details class="diag-block" open><summary>Análise de RMS por dinâmica · ${rangeMsg || ''}</summary>`;
+      html += `<ul class="diag-list" style="list-style:none;margin-left:6px">`;
+      DYNAMICS.forEach(d => {
+        const m = state.sampleStats.rmsMeanByDyn[d];
+        const n = state.sampleStats.rmsByDyn[d].length;
+        if (n === 0) return;
+        html += `<li><code>${d}</code> &nbsp;média RMS = <strong>${m.toFixed(1)} dBFS</strong> &nbsp;<em>(${n} amostras)</em></li>`;
+      });
+      html += `</ul>`;
+      html += `<div style="margin-top:6px;font-style:italic;opacity:0.75;font-size:11px;line-height:1.4">`;
+      html += `A normalização RMS automática compensa a diferença entre o RMS do arquivo e a referência interna do app (${REFERENCE_RMS_DBFS} dBFS), garantindo que o ganho de Meyer aplicado por cima produza a relação dinâmica física correta entre pp/p/mp/mf/f/ff.`;
+      html += `</div></details>`;
+    }
+  }
+
   if (result.parsedExamples.length > 0) {
     html += `<details class="diag-block"><summary>Primeiros ${result.parsedExamples.length} reconhecidos</summary>`;
     html += `<ul class="diag-list">`;
     result.parsedExamples.forEach(p => {
-      html += `<li><code>${p.name}</code> → <em>${INSTRUMENTS[p.inst].name}</em> · ${p.note || '(sem nota)'} · ${p.dyn}</li>`;
+      const rmsStr = p.rms !== undefined ? ` &nbsp;<em>RMS ${p.rms} dBFS</em>` : '';
+      html += `<li><code>${p.name}</code> → <em>${INSTRUMENTS[p.inst].name}</em> · ${p.note || '(sem nota)'} · ${p.dyn}${rmsStr}</li>`;
     });
     html += `</ul></details>`;
   }
@@ -3829,9 +4002,11 @@ function playReference() {
       const instLevel = levelMultiple(INSTRUMENTS[instrKey].levels[s.dyn], s.count);
       // Ganho relativo ao total: db diff → linear
       const relGain = Math.pow(10, (instLevel - totalDB) / 20);
+      // Compensa a normalização do banco para que a diferença dinâmica seja física
+      const normGain = match.sample.normalizationGain || 1;
 
       const gain = audioCtx.createGain();
-      gain.gain.value = relGain * 0.6;
+      gain.gain.value = relGain * normGain * 0.6;
       gain.connect(masterGain);
 
       // Reproduzir o sample em loop se for curto, ou single-shot se for longo
@@ -4070,8 +4245,9 @@ function scheduleCalibratedGraphOffline(ctx, master, mode, totalDB, endTime) {
 
       const instLevel = levelMultiple(INSTRUMENTS[instrKey].levels[s.dyn], s.count);
       const relGain = Math.pow(10, (instLevel - totalDB) / 20);
+      const normGain = match.sample.normalizationGain || 1;
       const gain = ctx.createGain();
-      gain.gain.value = relGain * 0.6;
+      gain.gain.value = relGain * normGain * 0.6;
       gain.connect(master);
 
       const src = ctx.createBufferSource();
@@ -4179,8 +4355,9 @@ function scheduleBlockGraphOffline(ctx, master, block, totalDB, endTime) {
       const targetMidi = noteToMidi(voice.note);
       const semitoneShift = targetMidi - match.sample.semitones;
       if (Math.abs(semitoneShift) <= 12) {
+        const normGain = match.sample.normalizationGain || 1;
         const gain = ctx.createGain();
-        gain.gain.value = relGain * 0.5;
+        gain.gain.value = relGain * normGain * 0.5;
         gain.connect(master);
         const src = ctx.createBufferSource();
         src.buffer = copyBufferToCtx(match.sample.buffer, ctx);
@@ -4717,8 +4894,9 @@ function playVoice(voice, totalDB) {
   const match = state.sampleStats.total > 0 ? findBestSample(voice.inst, voice.dyn) : null;
 
   if (match && match.sample.buffer) {
+    const normGain = match.sample.normalizationGain || 1;
     const gain = audioCtx.createGain();
-    gain.gain.value = relGain * 0.5;
+    gain.gain.value = relGain * normGain * 0.5;
     gain.connect(masterGain);
 
     const src = audioCtx.createBufferSource();
