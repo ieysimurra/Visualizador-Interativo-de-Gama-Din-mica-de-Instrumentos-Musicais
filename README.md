@@ -129,18 +129,6 @@ dinâmica nos dropdowns e clique em "→". O sample é decodificado e adicionado
 
 ---
 
-## Plano de aula sugerido (3h)
-
-| Tempo | Bloco | Atividade |
-|---|---|---|
-| 0:00–0:30 | **Introdução teórica** | Soma logarítmica, intensidade vs. pressão, escala dB |
-| 0:30–1:30 | **Prática guiada** | Explorar o app: contar 1, 2, 4, 8, 16 violinos a mf → confirmar lei +10·log₁₀(n) |
-| 1:30–1:45 | Intervalo | |
-| 1:45–2:30 | **Prática individual** | Reconstruir presets de Mozart e Mahler; comparar dB e fones |
-| 2:30–3:00 | **Discussão** | Por que metais "dominam" o tutti? Implicações para orquestração |
-
----
-
 ## Estrutura do repositório
 
 ```
