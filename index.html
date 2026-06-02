@@ -932,6 +932,31 @@ a:hover { border-color: var(--varnish); }
 }
 .player-mode-btn:disabled:hover { border-color: rgba(232, 184, 95, 0.25); }
 
+.player-export-btn {
+  background: transparent;
+  color: var(--brass-glow);
+  border: 1px solid rgba(232, 184, 95, 0.5);
+  border-radius: 4px;
+  padding: 6px 12px;
+  margin-left: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.player-export-btn:hover {
+  background: var(--brass-glow);
+  color: var(--ink);
+  border-color: var(--brass-glow);
+}
+.player-export-btn:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
 /* ============================
    BIBLIOTECA DE SAMPLES
    ============================ */
@@ -1561,6 +1586,25 @@ a:hover { border-color: var(--varnish); }
 }
 .block-play-btn:hover { background: var(--brass); color: var(--paper); }
 .block-play-btn.playing { background: var(--varnish); color: var(--paper); border-color: var(--varnish); }
+
+.block-export-btn {
+  background: transparent;
+  color: var(--brass);
+  border: 1px solid var(--brass);
+  border-radius: 3px;
+  padding: 5px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.block-export-btn:hover {
+  background: var(--brass);
+  color: var(--paper);
+}
+.block-export-btn:disabled { opacity: 0.5; cursor: progress; }
 .block-remove-btn {
   color: var(--varnish-deep);
   border-color: rgba(74, 24, 8, 0.4);
@@ -1889,6 +1933,7 @@ a:hover { border-color: var(--varnish); }
             <button class="player-mode-btn active" data-mode="tone">Tom 1 kHz</button>
             <button class="player-mode-btn" data-mode="orch">Timbre</button>
             <button class="player-mode-btn" data-mode="samples" id="mode-samples-btn" disabled>Samples</button>
+            <button class="player-export-btn" id="export-wav-btn" title="Renderizar 4 s e baixar como .wav">💾 WAV</button>
           </div>
         </div>
         <div class="calibration-warning">
@@ -3905,6 +3950,387 @@ function playFallbackTimbre(totalDB) {
 }
 
 /* -------------------------------------------------------------------------
+   12b. RENDERING OFFLINE PARA WAV
+   -------------------------------------------------------------------------
+   Usa OfflineAudioContext para renderizar o mesmo grafo de áudio em wallclock
+   acelerado, retornando um AudioBuffer que codificamos em PCM 16-bit estéreo.
+   ----------------------------------------------------------------------- */
+
+// Codifica AudioBuffer → WAV Blob (PCM 16-bit LE estéreo)
+function audioBufferToWavBlob(buffer) {
+  const numCh = buffer.numberOfChannels;
+  const sr = buffer.sampleRate;
+  const len = buffer.length;
+  const bytesPerSample = 2;
+  const blockAlign = numCh * bytesPerSample;
+  const byteRate = sr * blockAlign;
+  const dataSize = len * blockAlign;
+  const bufferSize = 44 + dataSize;
+  const arrayBuf = new ArrayBuffer(bufferSize);
+  const view = new DataView(arrayBuf);
+
+  function writeStr(off, s) { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); }
+
+  // RIFF
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeStr(8, 'WAVE');
+  // fmt
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);       // PCM subchunk size
+  view.setUint16(20, 1, true);        // PCM format
+  view.setUint16(22, numCh, true);
+  view.setUint32(24, sr, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true);       // bits per sample
+  // data
+  writeStr(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  // Intercala canais e converte float → int16
+  const channelData = [];
+  for (let ch = 0; ch < numCh; ch++) channelData.push(buffer.getChannelData(ch));
+
+  let offset = 44;
+  for (let i = 0; i < len; i++) {
+    for (let ch = 0; ch < numCh; ch++) {
+      let s = Math.max(-1, Math.min(1, channelData[ch][i]));
+      s = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      view.setInt16(offset, s | 0, true);
+      offset += 2;
+    }
+  }
+  return new Blob([arrayBuf], { type: 'audio/wav' });
+}
+
+// Copia um AudioBuffer para um novo contexto (ctx-bound)
+function copyBufferToCtx(srcBuffer, dstCtx) {
+  const newBuf = dstCtx.createBuffer(
+    srcBuffer.numberOfChannels,
+    srcBuffer.length,
+    srcBuffer.sampleRate
+  );
+  for (let ch = 0; ch < srcBuffer.numberOfChannels; ch++) {
+    newBuf.copyToChannel(srcBuffer.getChannelData(ch), ch);
+  }
+  return newBuf;
+}
+
+// Trigger download via blob URL
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 100);
+}
+
+function slugify(str) {
+  return (str || '')
+    .toString()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
+// ----- Agendamento OFFLINE da audição calibrada -----
+// Reproduz a lógica de playReference/playFallbackTimbre mas em ctx parametrizado,
+// agendando explicitamente o stop em endTime para o rendering offline terminar.
+function scheduleCalibratedGraphOffline(ctx, master, mode, totalDB, endTime) {
+  const t0 = 0;                        // ctx.currentTime sempre 0 em offline antes de startRendering
+  const sustainGain = 0.42 * Math.min(1, Math.max(0.05,
+    Math.pow(10, (totalDB - 100) / 20) * 0.6));
+
+  // Envelope no master: attack 0.12s, release 0.2s
+  master.gain.setValueAtTime(0, t0);
+  master.gain.linearRampToValueAtTime(sustainGain, t0 + 0.12);
+  master.gain.setValueAtTime(sustainGain, Math.max(t0 + 0.12, endTime - 0.2));
+  master.gain.linearRampToValueAtTime(0, endTime);
+
+  if (mode === 'tone') {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 1000;
+    osc.connect(master);
+    osc.start(t0);
+    osc.stop(endTime);
+    return true;
+  }
+
+  if (mode === 'samples') {
+    let used = false;
+    Object.keys(INSTRUMENTS).forEach(instrKey => {
+      const s = state[instrKey];
+      if (!s || s.count === 0) return;
+      const match = findBestSample(instrKey, s.dyn);
+      if (!match) return;
+      used = true;
+
+      const instLevel = levelMultiple(INSTRUMENTS[instrKey].levels[s.dyn], s.count);
+      const relGain = Math.pow(10, (instLevel - totalDB) / 20);
+      const gain = ctx.createGain();
+      gain.gain.value = relGain * 0.6;
+      gain.connect(master);
+
+      const src = ctx.createBufferSource();
+      src.buffer = copyBufferToCtx(match.sample.buffer, ctx);
+
+      const dynDiff = DYNAMICS.indexOf(s.dyn) - DYNAMICS.indexOf(match.dynUsed);
+      if (dynDiff !== 0) {
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = Math.max(800, 8000 * Math.pow(1.5, dynDiff));
+        src.connect(filter);
+        filter.connect(gain);
+      } else {
+        src.connect(gain);
+      }
+      if (src.buffer.duration < 3) {
+        src.loop = true;
+        src.loopStart = src.buffer.duration * 0.2;
+        src.loopEnd = src.buffer.duration * 0.8;
+      }
+      src.start(t0);
+      src.stop(endTime);
+    });
+    if (used) return true;
+    // se nenhum sample disponível, cai pro timbre
+  }
+
+  // Timbre sintético
+  scheduleTimbreGraphOffline(ctx, master, totalDB, t0, endTime);
+  return true;
+}
+
+function scheduleTimbreGraphOffline(ctx, master, totalDB, t0, endTime) {
+  Object.keys(FAMILIES).forEach(famKey => {
+    const famLevel = computeFamilyLevel(famKey);
+    if (!isFinite(famLevel) || famLevel < 40) return;
+    const famGainNorm = Math.pow(10, (famLevel - totalDB) / 20);
+    const famGain = ctx.createGain();
+    famGain.gain.value = famGainNorm * 0.4;
+    famGain.connect(master);
+
+    FAMILIES[famKey].order.forEach(instrKey => {
+      const s = state[instrKey];
+      if (!s || s.count === 0) return;
+      const inst = INSTRUMENTS[instrKey];
+      const fundamentals = inst.freqCenter;
+      let harmonics, weights, oscType;
+      if (famKey === 'strings') {
+        harmonics = [1,2,3,4,5]; weights = [1,0.6,0.4,0.3,0.15]; oscType = 'sawtooth';
+      } else if (famKey === 'woods') {
+        harmonics = [1,2,3,4,5,6]; weights = [1,0.5,0.5,0.3,0.25,0.15]; oscType = 'triangle';
+      } else {
+        harmonics = [1,2,3,4,5,6,7]; weights = [0.8,1,0.7,0.6,0.4,0.3,0.2]; oscType = 'square';
+      }
+      const instGain = ctx.createGain();
+      const countContrib = Math.pow(10, (10 * Math.log10(s.count)) / 20);
+      instGain.gain.value = countContrib / harmonics.length;
+      instGain.connect(famGain);
+
+      harmonics.forEach((h, idx) => {
+        const f = fundamentals * h;
+        if (f > 12000) return;
+        const osc = ctx.createOscillator();
+        osc.type = oscType;
+        osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.005);
+        const oscGain = ctx.createGain();
+        oscGain.gain.value = weights[idx];
+
+        const lfo = ctx.createOscillator();
+        lfo.frequency.value = 4 + Math.random() * 2;
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = f * 0.003;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        lfo.start(t0);
+        lfo.stop(endTime);
+
+        osc.connect(oscGain);
+        oscGain.connect(instGain);
+        osc.start(t0);
+        osc.stop(endTime);
+      });
+    });
+  });
+}
+
+// ----- Agendamento OFFLINE de um bloco -----
+function scheduleBlockGraphOffline(ctx, master, block, totalDB, endTime) {
+  const t0 = 0;
+  const sustainGain = Math.min(0.65, Math.max(0.03,
+    Math.pow(10, (totalDB - 100) / 20) * 0.32));
+  master.gain.setValueAtTime(0, t0);
+  master.gain.linearRampToValueAtTime(sustainGain, t0 + 0.12);
+  master.gain.setValueAtTime(sustainGain, Math.max(t0 + 0.12, endTime - 0.2));
+  master.gain.linearRampToValueAtTime(0, endTime);
+
+  block.voices.forEach(voice => {
+    if (voice.count === 0 || !INSTRUMENTS[voice.inst]) return;
+
+    const instLevel = levelMultiple(INSTRUMENTS[voice.inst].levels[voice.dyn], voice.count);
+    const relGain = Math.pow(10, (instLevel - totalDB) / 20);
+    const match = state.sampleStats.total > 0 ? findBestSample(voice.inst, voice.dyn) : null;
+
+    if (match && match.sample.buffer && match.sample.semitones && noteToMidi(voice.note)) {
+      const targetMidi = noteToMidi(voice.note);
+      const semitoneShift = targetMidi - match.sample.semitones;
+      if (Math.abs(semitoneShift) <= 12) {
+        const gain = ctx.createGain();
+        gain.gain.value = relGain * 0.5;
+        gain.connect(master);
+        const src = ctx.createBufferSource();
+        src.buffer = copyBufferToCtx(match.sample.buffer, ctx);
+        src.playbackRate.value = Math.pow(2, semitoneShift / 12);
+        src.connect(gain);
+        if (src.buffer.duration < 3) {
+          src.loop = true;
+          src.loopStart = src.buffer.duration * 0.2;
+          src.loopEnd = src.buffer.duration * 0.8;
+        }
+        src.start(t0);
+        src.stop(endTime);
+        return;
+      }
+    }
+
+    // Síntese para esta voz
+    const gain = ctx.createGain();
+    gain.gain.value = relGain * 0.35;
+    gain.connect(master);
+    synthesizeVoiceOffline(ctx, gain, voice, t0, endTime);
+  });
+}
+
+function synthesizeVoiceOffline(ctx, outGain, voice, t0, endTime) {
+  const family = blockFamilyOf(voice.inst);
+  const fundamental = noteToFreq(voice.note);
+  let harmonics, weights, oscType;
+  if (family === 'strings') {
+    harmonics = [1,2,3,4,5]; weights = [1,0.6,0.4,0.3,0.15]; oscType = 'sawtooth';
+  } else if (family === 'woods') {
+    harmonics = [1,2,3,4,5,6]; weights = [1,0.5,0.5,0.3,0.25,0.15]; oscType = 'triangle';
+  } else {
+    harmonics = [1,2,3,4,5,6,7]; weights = [0.8,1,0.7,0.6,0.4,0.3,0.2]; oscType = 'square';
+  }
+  const norm = 1 / harmonics.length;
+  harmonics.forEach((h, idx) => {
+    const f = fundamental * h;
+    if (f > 12000) return;
+    const osc = ctx.createOscillator();
+    osc.type = oscType;
+    osc.frequency.value = f * (1 + (Math.random() - 0.5) * 0.005);
+    const oscGain = ctx.createGain();
+    oscGain.gain.value = weights[idx] * norm;
+
+    const lfo = ctx.createOscillator();
+    lfo.frequency.value = 4 + Math.random() * 2;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = f * 0.003;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    lfo.start(t0);
+    lfo.stop(endTime);
+
+    osc.connect(oscGain);
+    oscGain.connect(outGain);
+    osc.start(t0);
+    osc.stop(endTime);
+  });
+}
+
+// ----- Funções públicas de render -----
+async function renderCalibratedToWav(durationSec = 4) {
+  const sr = 48000;
+  const ofCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+    2, Math.round(sr * durationSec), sr
+  );
+  const master = ofCtx.createGain();
+  master.connect(ofCtx.destination);
+
+  const totalDB = computeTotalLevel();
+  if (!isFinite(totalDB) || totalDB < 40) {
+    throw new Error('Configuração silenciosa — adicione ao menos um instrumento');
+  }
+  scheduleCalibratedGraphOffline(ofCtx, master, playMode, totalDB, durationSec);
+
+  const rendered = await ofCtx.startRendering();
+  return audioBufferToWavBlob(rendered);
+}
+
+async function renderBlockToWavBlob(blockId, durationSec = 4) {
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block || block.voices.length === 0) {
+    throw new Error('Bloco vazio — adicione ao menos uma voz');
+  }
+  const totalDB = blockSPL(block);
+  if (!isFinite(totalDB)) throw new Error('Bloco silencioso');
+
+  const sr = 48000;
+  const ofCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+    2, Math.round(sr * durationSec), sr
+  );
+  const master = ofCtx.createGain();
+  master.connect(ofCtx.destination);
+
+  scheduleBlockGraphOffline(ofCtx, master, block, totalDB, durationSec);
+  const rendered = await ofCtx.startRendering();
+  return audioBufferToWavBlob(rendered);
+}
+
+// ----- Handlers expostos para os botões UI -----
+async function exportCalibratedWav(btn) {
+  if (btn.disabled) return;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Renderizando…';
+  try {
+    const blob = await renderCalibratedToWav(4);
+    const totalDB = computeTotalLevel();
+    const modeName = playMode === 'tone' ? 'tom1k' : (playMode === 'samples' ? 'samples' : 'timbre');
+    const fname = `audicao-calibrada-${modeName}-${totalDB.toFixed(0)}dB.wav`;
+    downloadBlob(blob, fname);
+    btn.textContent = '✓ baixado';
+    setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 1800);
+  } catch (e) {
+    console.error('Erro ao renderizar WAV:', e);
+    btn.textContent = '⚠ ' + (e.message || 'erro').slice(0, 30);
+    setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
+  }
+}
+
+async function exportBlockWav(blockId, btn) {
+  if (btn.disabled) return;
+  const block = state.blocks.find(b => b.id === blockId);
+  if (!block) return;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Renderizando…';
+  try {
+    const blob = await renderBlockToWavBlob(blockId, 4);
+    const totalDB = blockSPL(block);
+    const idx = state.blocks.indexOf(block);
+    const fname = `bloco-${ROMAN[idx] || (idx + 1)}-${slugify(block.label)}-${totalDB.toFixed(0)}dB.wav`;
+    downloadBlob(blob, fname);
+    btn.textContent = '✓ baixado';
+    setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 1800);
+  } catch (e) {
+    console.error('Erro ao renderizar bloco WAV:', e);
+    btn.textContent = '⚠ ' + (e.message || 'erro').slice(0, 30);
+    setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 3000);
+  }
+}
+
+/* -------------------------------------------------------------------------
    12c. RENDERIZAÇÃO DOS BLOCOS DE ACORDES
    ------------------------------------------------------------------------- */
 
@@ -4104,6 +4530,7 @@ function renderBlocks() {
             <button class="block-play-btn ${isPlaying ? 'playing' : ''}" data-block="${block.id}">
               ${isPlaying ? '◼ parar' : '▶ tocar'}
             </button>
+            <button class="block-export-btn" data-block="${block.id}" title="Renderizar 4 s e baixar como .wav">💾 WAV</button>
             <button class="block-remove-btn" data-block="${block.id}" title="Remover bloco">remover</button>
           </div>
         </div>
@@ -4188,6 +4615,14 @@ function wireBlockEvents() {
       } else {
         playBlock(id);
       }
+    });
+  });
+
+  // Exportar WAV do bloco
+  wrap.querySelectorAll('.block-export-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.block, 10);
+      exportBlockWav(id, btn);
     });
   });
 
@@ -4520,6 +4955,12 @@ function init() {
         }
       });
     });
+
+    // Botão de exportar WAV
+    const exportBtn = document.getElementById('export-wav-btn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => exportCalibratedWav(exportBtn));
+    }
   });
 
   // Biblioteca de samples

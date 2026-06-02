@@ -6,6 +6,35 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.3.0] — 2026-06-02
+
+### Adicionado
+
+- **Renderização e download de WAV** — exporta o áudio resultante como arquivo
+  `.wav` PCM 16-bit estéreo a 48 kHz:
+  - **Botão "💾 WAV"** na audição calibrada (renderiza o tom de 1 kHz, o timbre
+    sintético, ou o mix de samples — conforme o modo selecionado).
+  - **Botão "💾 WAV"** em cada bloco de acorde (renderiza aquele bloco isoladamente).
+  - **Duração padrão**: 4 segundos com fade-in/out (0,12 s + 0,2 s).
+  - **Nomes descritivos automáticos**: `audicao-calibrada-{modo}-{NN}dB.wav` e
+    `bloco-{I-V}-{label-slugificado}-{NN}dB.wav`.
+- **Renderização via `OfflineAudioContext`** — o mesmo grafo de áudio usado no
+  playback é re-agendado num contexto offline, que renderiza em wallclock acelerado
+  (4 s de áudio são produzidos em frações de segundo).
+- **Codificador WAV embutido** — implementação minimalista de cabeçalho RIFF/WAVE
+  + PCM 16-bit LE, sem dependências externas, totalmente single-file.
+
+### Como funciona
+
+Quando você clica em **💾 WAV** na audição calibrada, o app cria um
+`OfflineAudioContext(2, 48000 × 4, 48000)` e re-monta a mesma cadeia de áudio
+(osciladores + filtros + ganhos OU sources de samples decodificados, conforme o
+modo) — mas com `start(0)` e `stop(4)` agendados explicitamente. Aguarda
+`startRendering()`, codifica o `AudioBuffer` resultante em PCM 16-bit estéreo, e
+dispara o download via Blob URL.
+
+---
+
 ## [1.2.2] — 2026-06-02
 
 ### Corrigido
