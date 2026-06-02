@@ -6,6 +6,31 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.2.2] — 2026-06-02
+
+### Corrigido
+
+- **Crash de `TypeError: Cannot read properties of null (reading 'count')`** em
+  `dominantFrequency`, `computeTotalLevel` (via `totalMusicians`) e `applyPreset`.
+  Estas funções iteravam por `Object.keys(state)` presumindo que toda chave do
+  state era um instrumento com `.count` e `.dyn`. A v1.2.0 introduziu novas chaves
+  no state (`samples`, `unrecognized`, `sampleStats`, `blocks`, `blockIdCounter`,
+  `blockPlayingId`, `blockPlayingSources`); ao encontrar `state.blockPlayingId`
+  (que começa como `null`), o forEach quebrava com null pointer dereference.
+- Solução: trocar `Object.keys(state)` por `Object.keys(INSTRUMENTS)` em todas as
+  três funções — semanticamente mais correto e imune a futuras adições no state.
+
+### Adicionado
+
+- **Barra de erro visível no topo da página** — em vez de erros silenciosos no
+  console, qualquer exceção em runtime aparece em uma barra vermelha que
+  facilita reportar problemas.
+- **Inicialização defensiva** — cada etapa do `init()` (renderFamilies, renderVUMeter,
+  renderPresets, etc.) roda em `try/catch` independente, então uma falha numa parte
+  não derruba o resto do app.
+
+---
+
 ## [1.2.0] — 2026-06-02
 
 ### Adicionado
