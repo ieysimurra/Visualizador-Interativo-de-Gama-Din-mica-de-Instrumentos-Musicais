@@ -2207,6 +2207,13 @@ a:hover { border-color: var(--varnish); }
 
       <h4>Aplicação à orquestração</h4>
       <p>A presença dominante dos metais — especialmente trompetes e trompas — não é apenas uma questão de potência absoluta: estes instrumentos têm conteúdo espectral concentrado justamente na banda de sensibilidade máxima do ouvido. Um contrabaixo a 90 dB SPL pode parecer significativamente mais discreto que um trompete ao mesmo nível.</p>
+
+      <h3>Sequência didática sugerida (3h)</h3>
+      <p><strong>0:00–0:30</strong> · Introdução: conceitos de potência, intensidade e pressão sonora. Apresentação das figuras 6.3 e 6.4 de Henrique (Meyer 1995).</p>
+      <p><strong>0:30–1:30</strong> · Prática 1: explorar a aplicação. Estudantes em duplas reproduzem a Figura 6.4 (49 músicos, 118 dB) e comparam com configurações alternativas.</p>
+      <p><strong>1:30–1:45</strong> · Intervalo.</p>
+      <p><strong>1:45–2:30</strong> · Prática 2: cada dupla projeta uma orquestração específica (ex: Mahler Sinfonia 8 vs. Mozart Sinfonia 40) e justifica acusticamente as escolhas históricas.</p>
+      <p><strong>2:30–3:00</strong> · Discussão coletiva sobre balanceamento orquestral, com referências ao tratado de orquestração (Berlioz/Strauss, Adler).</p>
     </div>
   </div>
 
@@ -2307,7 +2314,7 @@ const PRESETS = {
     state: {}
   },
   meyer49: {
-    label: 'Modelo de Orquestra 1',
+    label: 'Tutti de Meyer',
     titleIt: '49 músicos',
     desc: 'Reprodução da Fig. 6.4',
     state: {
@@ -2326,8 +2333,8 @@ const PRESETS = {
     }
   },
   mozart: {
-    label: 'Modelo de Orquestra 2',
-    titleIt: '',
+    label: 'Mozart',
+    titleIt: 'Sinfonia clássica',
     desc: '~35 músicos · mf',
     state: {
       violino: { count: 12, dyn: 'mf' },
@@ -2343,8 +2350,8 @@ const PRESETS = {
     }
   },
   beethoven: {
-    label: 'Modelo de Orquestra 3',
-    titleIt: '',
+    label: 'Beethoven',
+    titleIt: 'Sinfônica romântica',
     desc: '~55 músicos · f',
     state: {
       violino: { count: 16, dyn: 'f' },
@@ -2361,8 +2368,8 @@ const PRESETS = {
     }
   },
   mahler: {
-    label: 'Modelo de Orquestra 4',
-    titleIt: '',
+    label: 'Mahler',
+    titleIt: 'Pós-romântica',
     desc: '~90 músicos · ff',
     state: {
       violino: { count: 20, dyn: 'ff' },
