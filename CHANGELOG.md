@@ -6,6 +6,34 @@ versionamento [SemVer](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.4.2] — 2026-06-02
+
+### Corrigido
+
+- **Direção da agulha do VU meter** — após o conserto da escala invertida (v1.4.1),
+  a fórmula de rotação da agulha permaneceu com o sinal antigo, fazendo com que
+  a agulha apontasse para o **lado oposto** das marcas. Removendo instrumentos
+  (intensidade caindo), a agulha ia para a direita (`ff`); adicionando, ia para
+  a esquerda (`pp`).
+- Causa: a função `polar()` usa `cx - cos(ang)·r` (espelhamento horizontal),
+  então o sinal da rotação SVG da agulha precisa ser oposto ao convencional para
+  acompanhar visualmente as marcas. Fórmula correta: `needleRotation = targetAngle - 90`
+  (antes: `90 - targetAngle`).
+
+### Verificação
+
+| dB | rotação SVG | direção visual da agulha |
+|---|---|---|
+| 40 | −110° | esquerda-inferior (acompanha marca `40`) ✓ |
+| 88 (mf) | +7° | topo, ligeiramente à direita ✓ |
+| 118 (Tutti Meyer) | +81° | direita-inferior (acompanha marca `120`) ✓ |
+| 130 | +110° | direita-inferior (acompanha marca `130`) ✓ |
+
+Agora adicionar instrumentos move a agulha para a **direita** (intensidades altas)
+e removê-los a move para a **esquerda** (intensidades baixas), como esperado.
+
+---
+
 ## [1.4.1] — 2026-06-02
 
 ### Corrigido
